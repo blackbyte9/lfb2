@@ -39,7 +39,18 @@ export default async function BookItemsPage({ params, searchParams }: Props) {
   const items = await prisma.item.findMany({
     where: { bookId: book.id, status: { not: "REMOVED" } },
     orderBy: { id: "asc" },
-    select: { id: true, status: true, bookId: true, createdAt: true, updatedAt: true },
+    select: {
+      id: true,
+      status: true,
+      bookId: true,
+      createdAt: true,
+      updatedAt: true,
+      leases: {
+        where: { active: true },
+        select: { studentId: true, student: { select: { firstname: true, lastname: true } } },
+        take: 1,
+      },
+    },
   });
 
   const isAdmin = session?.user.role === "ADMIN";
@@ -47,7 +58,14 @@ export default async function BookItemsPage({ params, searchParams }: Props) {
 
   const booksForClient: BookOption[] = books;
   const itemsForClient: ItemRow[] = items.map((item) => ({
-    ...item,
+    id: item.id,
+    status: item.status,
+    bookId: item.bookId,
+    isLeased: item.leases.length > 0,
+    leasedStudentId: item.leases[0]?.studentId ?? null,
+    leasedStudentName: item.leases[0]
+      ? `${item.leases[0].student.lastname}, ${item.leases[0].student.firstname}`
+      : null,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
   }));

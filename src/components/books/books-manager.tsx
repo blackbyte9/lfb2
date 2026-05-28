@@ -15,6 +15,7 @@ export type BookRow = {
   isbn: string;
   name: string;
   itemCount: number;
+  leasedCount: number;
   createdAt: string;
 };
 
@@ -39,7 +40,7 @@ export function BooksManager({ initialBooks, canManage }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(20);
-  const [sortBy, setSortBy] = useState<"isbn" | "name" | "itemCount">("name");
+  const [sortBy, setSortBy] = useState<"isbn" | "name" | "itemCount" | "leasedCount" | "availableCount">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const { fileInputRef, handleFileChange, triggerFileInput, status, error: uploadError, clearStatus, acceptedTypes } =
@@ -60,10 +61,16 @@ export function BooksManager({ initialBooks, canManage }: Props) {
   const pageCount = Math.max(1, Math.ceil(books.length / pageSize));
   const sortedBooks = useMemo(() => {
     const sorted = [...books].sort((a, b) => {
-      const cmp =
-        sortBy === "itemCount"
-          ? a.itemCount - b.itemCount
-          : (sortBy === "isbn" ? a.isbn : a.name).localeCompare(sortBy === "isbn" ? b.isbn : b.name, "de");
+      let cmp: number;
+      if (sortBy === "itemCount") {
+        cmp = a.itemCount - b.itemCount;
+      } else if (sortBy === "leasedCount") {
+        cmp = a.leasedCount - b.leasedCount;
+      } else if (sortBy === "availableCount") {
+        cmp = (a.itemCount - a.leasedCount) - (b.itemCount - b.leasedCount);
+      } else {
+        cmp = (sortBy === "isbn" ? a.isbn : a.name).localeCompare(sortBy === "isbn" ? b.isbn : b.name, "de");
+      }
       return sortOrder === "asc" ? cmp : -cmp;
     });
     return sorted;
@@ -321,7 +328,7 @@ export function BooksManager({ initialBooks, canManage }: Props) {
                   }}
                 />
               </TableHead>
-              <TableHead className="w-28 text-right">
+              <TableHead className="w-24 text-right">
                 <SortHeaderButton
                   label="Items"
                   active={sortBy === "itemCount"}
@@ -337,13 +344,45 @@ export function BooksManager({ initialBooks, canManage }: Props) {
                   }}
                 />
               </TableHead>
+              <TableHead className="w-24 text-right">
+                <SortHeaderButton
+                  label="Verfügbar"
+                  active={sortBy === "availableCount"}
+                  direction={sortOrder}
+                  className="ml-auto"
+                  onClick={() => {
+                    if (sortBy === "availableCount") {
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortBy("availableCount");
+                      setSortOrder("asc");
+                    }
+                  }}
+                />
+              </TableHead>
+              <TableHead className="w-28 text-right">
+                <SortHeaderButton
+                  label="Ausgeliehen"
+                  active={sortBy === "leasedCount"}
+                  direction={sortOrder}
+                  className="ml-auto"
+                  onClick={() => {
+                    if (sortBy === "leasedCount") {
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortBy("leasedCount");
+                      setSortOrder("asc");
+                    }
+                  }}
+                />
+              </TableHead>
               {canManage && <TableHead className="w-52">Aktionen</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {pagedBooks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canManage ? 4 : 3} className="py-6 text-center text-[#364152]">
+                <TableCell colSpan={canManage ? 6 : 5} className="py-6 text-center text-[#364152]">
                   Keine Bücher vorhanden
                 </TableCell>
               </TableRow>
@@ -362,6 +401,8 @@ export function BooksManager({ initialBooks, canManage }: Props) {
                       <TableCell>{book.isbn}</TableCell>
                       <TableCell>{book.name}</TableCell>
                       <TableCell className="text-right font-medium text-[#364152]">{book.itemCount}</TableCell>
+                      <TableCell className="text-right font-medium text-green-700">{book.itemCount - book.leasedCount}</TableCell>
+                      <TableCell className="text-right font-medium text-amber-700">{book.leasedCount}</TableCell>
                     </>
                   )}
                   renderEditCells={() => (
@@ -387,6 +428,8 @@ export function BooksManager({ initialBooks, canManage }: Props) {
                         />
                       </TableCell>
                       <TableCell className="text-right font-medium text-[#364152]">{book.itemCount}</TableCell>
+                      <TableCell className="text-right font-medium text-green-700">{book.itemCount - book.leasedCount}</TableCell>
+                      <TableCell className="text-right font-medium text-amber-700">{book.leasedCount}</TableCell>
                     </>
                   )}
                   onStartEdit={() => startEdit(book)}

@@ -15,7 +15,13 @@ export default async function BooksPage() {
       isbn: true,
       name: true,
       createdAt: true,
-      _count: { select: { items: { where: { status: { not: "REMOVED" } } } } },
+      items: {
+        where: { status: { not: "REMOVED" } },
+        select: {
+          id: true,
+          _count: { select: { leases: { where: { active: true } } } },
+        },
+      },
     },
   });
 
@@ -23,7 +29,8 @@ export default async function BooksPage() {
     id: book.id,
     isbn: book.isbn,
     name: book.name,
-    itemCount: book._count.items,
+    itemCount: book.items.length,
+    leasedCount: book.items.filter((item) => item._count.leases > 0).length,
     createdAt: book.createdAt.toISOString(),
   }));
 

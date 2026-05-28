@@ -23,6 +23,7 @@ export default async function StudentsPage() {
       course: true,
       status: true,
       createdAt: true,
+      _count: { select: { leases: { where: { active: true } } } },
     },
   });
 
@@ -33,6 +34,7 @@ export default async function StudentsPage() {
     lastname: student.lastname,
     course: student.course,
     status: student.status,
+    activeLeasesCount: student._count.leases,
     createdAt: student.createdAt.toISOString(),
   }));
 

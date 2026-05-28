@@ -15,6 +15,9 @@ export type ItemRow = {
   id: string;
   status: ItemStatus;
   bookId: number;
+  isLeased: boolean;
+  leasedStudentId: number | null;
+  leasedStudentName: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -43,7 +46,7 @@ const ITEM_STATUSES: ItemStatus[] = ["NEW", "USED", "DAMAGED", "REMOVED"];
 export function BookItemsManager({ book, books, initialItems, canManage, highlightItemId = null }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<ItemRow[]>(initialItems);
-  const [sortBy, setSortBy] = useState<"id" | "status">("id");
+  const [sortBy, setSortBy] = useState<"id" | "status" | "leased">("id");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
   const [itemsError, setItemsError] = useState<string | null>(null);
@@ -81,11 +84,14 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
   const sortedBooks = useMemo(() => [...books].sort((a, b) => a.name.localeCompare(b.name, "de")), [books]);
   const sortedItems = useMemo(() => {
     return [...items].sort((left, right) => {
-      const comparison =
-        sortBy === "id"
-          ? left.id.localeCompare(right.id, "de")
-          : left.status.localeCompare(right.status, "de");
-
+      let comparison: number;
+      if (sortBy === "id") {
+        comparison = left.id.localeCompare(right.id, "de");
+      } else if (sortBy === "leased") {
+        comparison = Number(left.isLeased) - Number(right.isLeased);
+      } else {
+        comparison = left.status.localeCompare(right.status, "de");
+      }
       return sortOrder === "asc" ? comparison : -comparison;
     });
   }, [items, sortBy, sortOrder]);
@@ -161,6 +167,29 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
     setItemsInfo(`Item ${itemId} wurde gelöscht`);
   }
 
+  async function handleReturnItem(itemId: string) {
+    setItemsError(null);
+    setItemsInfo(null);
+    setImportIssues([]);
+    setUpdatingItemId(itemId);
+
+    const res = await fetch(`/api/items/${itemId}/return`, { method: "POST" });
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string };
+      setItemsError(data.error ?? "Rückgabe konnte nicht durchgeführt werden");
+      setUpdatingItemId(null);
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, isLeased: false, leasedStudentId: null, leasedStudentName: null } : item,
+      ),
+    );
+    setItemsInfo(`Item ${itemId} wurde zurückgegeben`);
+    setUpdatingItemId(null);
+  }
+
   async function handleUpdateItemStatus(itemId: string, status: ItemStatus) {
     setItemsError(null);
     setItemsInfo(null);
@@ -216,7 +245,7 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
     router.push(`/books/${targetBookId}`);
   }
 
-  function toggleSort(column: "id" | "status") {
+  function toggleSort(column: "id" | "status" | "leased") {
     if (sortBy === column) {
       setSortOrder((current) => (current === "asc" ? "desc" : "asc"));
       return;
@@ -374,6 +403,9 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
               <TableHead>
                 <SortHeaderButton label="Status" active={sortBy === "status"} direction={sortOrder} onClick={() => toggleSort("status")} />
               </TableHead>
+              <TableHead>
+                <SortHeaderButton label="Verfügbarkeit" active={sortBy === "leased"} direction={sortOrder} onClick={() => toggleSort("leased")} />
+              </TableHead>
               <TableHead>Erstellt</TableHead>
               {canManage && <TableHead className="w-40">Aktionen</TableHead>}
             </TableRow>
@@ -381,7 +413,7 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
           <TableBody>
             {sortedItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canManage ? 4 : 3} className="py-6 text-center text-[#364152]">
+                <TableCell colSpan={canManage ? 5 : 4} className="py-6 text-center text-[#364152]">
                   Keine Items fur dieses Buch vorhanden
                 </TableCell>
               </TableRow>
@@ -396,6 +428,19 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
                 >
                   <TableCell className="font-mono text-xs">{item.id}</TableCell>
                   <TableCell>{item.status}</TableCell>
+                  <TableCell>
+                    {item.isLeased && item.leasedStudentId !== null ? (
+                      <button
+                        type="button"
+                        className="font-medium text-amber-700 hover:underline text-left"
+                        onClick={() => router.push(`/students/${item.leasedStudentId}/leases`)}
+                      >
+                        {item.leasedStudentName ?? "Ausgeliehen"}
+                      </button>
+                    ) : (
+                      <span className="font-medium text-green-700">Verfügbar</span>
+                    )}
+                  </TableCell>
                   <TableCell>{new Date(item.createdAt).toLocaleDateString("de-DE")}</TableCell>
                   {canManage && (
                     <TableCell>
@@ -413,6 +458,16 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
                             </option>
                           ))}
                         </select>
+                        {item.isLeased && (
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            disabled={updatingItemId === item.id}
+                            onClick={() => void handleReturnItem(item.id)}
+                          >
+                            Zurückgeben
+                          </Button>
+                        )}
                         <Button size="xs" variant="outline" onClick={() => void handleDeleteItem(item.id)}>
                           Löschen
                         </Button>

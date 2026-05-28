@@ -20,8 +20,20 @@ export async function GET(request: NextRequest) {
       course: true,
       status: true,
       createdAt: true,
+      _count: { select: { leases: { where: { active: true } } } },
     },
   });
 
-  return NextResponse.json(students);
+  return NextResponse.json(
+    students.map((student) => ({
+      id: student.id,
+      idOld: student.idOld,
+      firstname: student.firstname,
+      lastname: student.lastname,
+      course: student.course,
+      status: student.status,
+      activeLeasesCount: student._count.leases,
+      createdAt: student.createdAt,
+    }))
+  );
 }

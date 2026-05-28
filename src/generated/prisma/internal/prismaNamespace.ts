@@ -392,6 +392,7 @@ export const ModelName = {
   Verification: 'Verification',
   Book: 'Book',
   Item: 'Item',
+  Lease: 'Lease',
   Test: 'Test'
 } as const
 
@@ -408,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "student" | "studentGradeHistory" | "user" | "session" | "account" | "verification" | "book" | "item" | "test"
+    modelProps: "student" | "studentGradeHistory" | "user" | "session" | "account" | "verification" | "book" | "item" | "lease" | "test"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1004,6 +1005,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Lease: {
+      payload: Prisma.$LeasePayload<ExtArgs>
+      fields: Prisma.LeaseFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.LeaseFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LeasePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.LeaseFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LeasePayload>
+        }
+        findFirst: {
+          args: Prisma.LeaseFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LeasePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.LeaseFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LeasePayload>
+        }
+        findMany: {
+          args: Prisma.LeaseFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LeasePayload>[]
+        }
+        create: {
+          args: Prisma.LeaseCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LeasePayload>
+        }
+        createMany: {
+          args: Prisma.LeaseCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.LeaseCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LeasePayload>[]
+        }
+        delete: {
+          args: Prisma.LeaseDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LeasePayload>
+        }
+        update: {
+          args: Prisma.LeaseUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LeasePayload>
+        }
+        deleteMany: {
+          args: Prisma.LeaseDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.LeaseUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.LeaseUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LeasePayload>[]
+        }
+        upsert: {
+          args: Prisma.LeaseUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LeasePayload>
+        }
+        aggregate: {
+          args: Prisma.LeaseAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateLease>
+        }
+        groupBy: {
+          args: Prisma.LeaseGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LeaseGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.LeaseCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LeaseCountAggregateOutputType> | number
+        }
+      }
+    }
     Test: {
       payload: Prisma.$TestPayload<ExtArgs>
       fields: Prisma.TestFieldRefs
@@ -1229,6 +1304,20 @@ export const ItemScalarFieldEnum = {
 } as const
 
 export type ItemScalarFieldEnum = (typeof ItemScalarFieldEnum)[keyof typeof ItemScalarFieldEnum]
+
+
+export const LeaseScalarFieldEnum = {
+  id: 'id',
+  leasedAt: 'leasedAt',
+  returnedAt: 'returnedAt',
+  active: 'active',
+  studentId: 'studentId',
+  itemId: 'itemId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type LeaseScalarFieldEnum = (typeof LeaseScalarFieldEnum)[keyof typeof LeaseScalarFieldEnum]
 
 
 export const TestScalarFieldEnum = {
@@ -1491,6 +1580,7 @@ export type GlobalOmitConfig = {
   verification?: Prisma.VerificationOmit
   book?: Prisma.BookOmit
   item?: Prisma.ItemOmit
+  lease?: Prisma.LeaseOmit
   test?: Prisma.TestOmit
 }
 

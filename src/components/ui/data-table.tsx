@@ -19,6 +19,7 @@ type DataTableProps<TData, TValue> = {
   initialPageSize?: number;
   pageSizeOptions?: number[];
   enableSorting?: boolean;
+  onRowClick?: (row: TData) => void;
 };
 
 export function DataTable<TData, TValue>({
@@ -28,6 +29,7 @@ export function DataTable<TData, TValue>({
   initialPageSize = 10,
   pageSizeOptions = [10, 20, 50],
   enableSorting = false,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -77,7 +79,15 @@ export function DataTable<TData, TValue>({
         <TableBody>
           {table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                onClick={(e) => {
+                  if (onRowClick && !(e.target as HTMLElement).closest("button, input, select, a")) {
+                    onRowClick(row.original);
+                  }
+                }}
+                className={onRowClick ? "cursor-pointer" : ""}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                 ))}

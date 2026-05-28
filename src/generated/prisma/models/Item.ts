@@ -217,6 +217,7 @@ export type ItemWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Item"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Item"> | Date | string
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
+  leases?: Prisma.LeaseListRelationFilter
 }
 
 export type ItemOrderByWithRelationInput = {
@@ -226,6 +227,7 @@ export type ItemOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   book?: Prisma.BookOrderByWithRelationInput
+  leases?: Prisma.LeaseOrderByRelationAggregateInput
 }
 
 export type ItemWhereUniqueInput = Prisma.AtLeast<{
@@ -238,6 +240,7 @@ export type ItemWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Item"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Item"> | Date | string
   book?: Prisma.XOR<Prisma.BookScalarRelationFilter, Prisma.BookWhereInput>
+  leases?: Prisma.LeaseListRelationFilter
 }, "id">
 
 export type ItemOrderByWithAggregationInput = {
@@ -270,6 +273,7 @@ export type ItemCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   book: Prisma.BookCreateNestedOneWithoutItemsInput
+  leases?: Prisma.LeaseCreateNestedManyWithoutItemInput
 }
 
 export type ItemUncheckedCreateInput = {
@@ -278,6 +282,7 @@ export type ItemUncheckedCreateInput = {
   bookId: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  leases?: Prisma.LeaseUncheckedCreateNestedManyWithoutItemInput
 }
 
 export type ItemUpdateInput = {
@@ -286,6 +291,7 @@ export type ItemUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   book?: Prisma.BookUpdateOneRequiredWithoutItemsNestedInput
+  leases?: Prisma.LeaseUpdateManyWithoutItemNestedInput
 }
 
 export type ItemUncheckedUpdateInput = {
@@ -294,6 +300,7 @@ export type ItemUncheckedUpdateInput = {
   bookId?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  leases?: Prisma.LeaseUncheckedUpdateManyWithoutItemNestedInput
 }
 
 export type ItemCreateManyInput = {
@@ -361,6 +368,11 @@ export type ItemSumOrderByAggregateInput = {
   bookId?: Prisma.SortOrder
 }
 
+export type ItemScalarRelationFilter = {
+  is?: Prisma.ItemWhereInput
+  isNot?: Prisma.ItemWhereInput
+}
+
 export type ItemCreateNestedManyWithoutBookInput = {
   create?: Prisma.XOR<Prisma.ItemCreateWithoutBookInput, Prisma.ItemUncheckedCreateWithoutBookInput> | Prisma.ItemCreateWithoutBookInput[] | Prisma.ItemUncheckedCreateWithoutBookInput[]
   connectOrCreate?: Prisma.ItemCreateOrConnectWithoutBookInput | Prisma.ItemCreateOrConnectWithoutBookInput[]
@@ -407,11 +419,26 @@ export type EnumItemStatusFieldUpdateOperationsInput = {
   set?: $Enums.ItemStatus
 }
 
+export type ItemCreateNestedOneWithoutLeasesInput = {
+  create?: Prisma.XOR<Prisma.ItemCreateWithoutLeasesInput, Prisma.ItemUncheckedCreateWithoutLeasesInput>
+  connectOrCreate?: Prisma.ItemCreateOrConnectWithoutLeasesInput
+  connect?: Prisma.ItemWhereUniqueInput
+}
+
+export type ItemUpdateOneRequiredWithoutLeasesNestedInput = {
+  create?: Prisma.XOR<Prisma.ItemCreateWithoutLeasesInput, Prisma.ItemUncheckedCreateWithoutLeasesInput>
+  connectOrCreate?: Prisma.ItemCreateOrConnectWithoutLeasesInput
+  upsert?: Prisma.ItemUpsertWithoutLeasesInput
+  connect?: Prisma.ItemWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ItemUpdateToOneWithWhereWithoutLeasesInput, Prisma.ItemUpdateWithoutLeasesInput>, Prisma.ItemUncheckedUpdateWithoutLeasesInput>
+}
+
 export type ItemCreateWithoutBookInput = {
   id: string
   status?: $Enums.ItemStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  leases?: Prisma.LeaseCreateNestedManyWithoutItemInput
 }
 
 export type ItemUncheckedCreateWithoutBookInput = {
@@ -419,6 +446,7 @@ export type ItemUncheckedCreateWithoutBookInput = {
   status?: $Enums.ItemStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  leases?: Prisma.LeaseUncheckedCreateNestedManyWithoutItemInput
 }
 
 export type ItemCreateOrConnectWithoutBookInput = {
@@ -458,6 +486,54 @@ export type ItemScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Item"> | Date | string
 }
 
+export type ItemCreateWithoutLeasesInput = {
+  id: string
+  status?: $Enums.ItemStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  book: Prisma.BookCreateNestedOneWithoutItemsInput
+}
+
+export type ItemUncheckedCreateWithoutLeasesInput = {
+  id: string
+  status?: $Enums.ItemStatus
+  bookId: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type ItemCreateOrConnectWithoutLeasesInput = {
+  where: Prisma.ItemWhereUniqueInput
+  create: Prisma.XOR<Prisma.ItemCreateWithoutLeasesInput, Prisma.ItemUncheckedCreateWithoutLeasesInput>
+}
+
+export type ItemUpsertWithoutLeasesInput = {
+  update: Prisma.XOR<Prisma.ItemUpdateWithoutLeasesInput, Prisma.ItemUncheckedUpdateWithoutLeasesInput>
+  create: Prisma.XOR<Prisma.ItemCreateWithoutLeasesInput, Prisma.ItemUncheckedCreateWithoutLeasesInput>
+  where?: Prisma.ItemWhereInput
+}
+
+export type ItemUpdateToOneWithWhereWithoutLeasesInput = {
+  where?: Prisma.ItemWhereInput
+  data: Prisma.XOR<Prisma.ItemUpdateWithoutLeasesInput, Prisma.ItemUncheckedUpdateWithoutLeasesInput>
+}
+
+export type ItemUpdateWithoutLeasesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  book?: Prisma.BookUpdateOneRequiredWithoutItemsNestedInput
+}
+
+export type ItemUncheckedUpdateWithoutLeasesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
+  bookId?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type ItemCreateManyBookInput = {
   id: string
   status?: $Enums.ItemStatus
@@ -470,6 +546,7 @@ export type ItemUpdateWithoutBookInput = {
   status?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  leases?: Prisma.LeaseUpdateManyWithoutItemNestedInput
 }
 
 export type ItemUncheckedUpdateWithoutBookInput = {
@@ -477,6 +554,7 @@ export type ItemUncheckedUpdateWithoutBookInput = {
   status?: Prisma.EnumItemStatusFieldUpdateOperationsInput | $Enums.ItemStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  leases?: Prisma.LeaseUncheckedUpdateManyWithoutItemNestedInput
 }
 
 export type ItemUncheckedUpdateManyWithoutBookInput = {
@@ -487,6 +565,35 @@ export type ItemUncheckedUpdateManyWithoutBookInput = {
 }
 
 
+/**
+ * Count Type ItemCountOutputType
+ */
+
+export type ItemCountOutputType = {
+  leases: number
+}
+
+export type ItemCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  leases?: boolean | ItemCountOutputTypeCountLeasesArgs
+}
+
+/**
+ * ItemCountOutputType without action
+ */
+export type ItemCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ItemCountOutputType
+   */
+  select?: Prisma.ItemCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * ItemCountOutputType without action
+ */
+export type ItemCountOutputTypeCountLeasesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.LeaseWhereInput
+}
+
 
 export type ItemSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -495,6 +602,8 @@ export type ItemSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   updatedAt?: boolean
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
+  leases?: boolean | Prisma.Item$leasesArgs<ExtArgs>
+  _count?: boolean | Prisma.ItemCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["item"]>
 
 export type ItemSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -526,6 +635,8 @@ export type ItemSelectScalar = {
 export type ItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "status" | "bookId" | "createdAt" | "updatedAt", ExtArgs["result"]["item"]>
 export type ItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
+  leases?: boolean | Prisma.Item$leasesArgs<ExtArgs>
+  _count?: boolean | Prisma.ItemCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ItemIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   book?: boolean | Prisma.BookDefaultArgs<ExtArgs>
@@ -538,6 +649,7 @@ export type $ItemPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "Item"
   objects: {
     book: Prisma.$BookPayload<ExtArgs>
+    leases: Prisma.$LeasePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -940,6 +1052,7 @@ readonly fields: ItemFieldRefs;
 export interface Prisma__ItemClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   book<T extends Prisma.BookDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookDefaultArgs<ExtArgs>>): Prisma.Prisma__BookClient<runtime.Types.Result.GetResult<Prisma.$BookPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  leases<T extends Prisma.Item$leasesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Item$leasesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LeasePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1372,6 +1485,30 @@ export type ItemDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Items to delete.
    */
   limit?: number
+}
+
+/**
+ * Item.leases
+ */
+export type Item$leasesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Lease
+   */
+  select?: Prisma.LeaseSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Lease
+   */
+  omit?: Prisma.LeaseOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.LeaseInclude<ExtArgs> | null
+  where?: Prisma.LeaseWhereInput
+  orderBy?: Prisma.LeaseOrderByWithRelationInput | Prisma.LeaseOrderByWithRelationInput[]
+  cursor?: Prisma.LeaseWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.LeaseScalarFieldEnum | Prisma.LeaseScalarFieldEnum[]
 }
 
 /**

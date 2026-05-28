@@ -58,6 +58,11 @@ export type Book = Prisma.BookModel
  */
 export type Item = Prisma.ItemModel
 /**
+ * Model Lease
+ * 
+ */
+export type Lease = Prisma.LeaseModel
+/**
  * Model Test
  * 
  */

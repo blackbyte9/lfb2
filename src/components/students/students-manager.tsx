@@ -17,6 +17,7 @@ export type StudentRow = {
   lastname: string;
   course: string;
   status: StudentStatus;
+  activeLeasesCount: number;
   createdAt: string;
 };
 
@@ -138,6 +139,28 @@ export function StudentsManager({ initialStudents, canManage }: Props) {
     },
   });
 
+  const {
+    fileInputRef: leaseFileInputRef,
+    handleFileChange: handleLeaseFileChange,
+    triggerFileInput: triggerLeaseFileInput,
+    status: leaseStatus,
+    error: leaseUploadError,
+    clearStatus: clearLeaseStatus,
+    acceptedTypes: leaseAcceptedTypes,
+  } = useFileUpload({
+    endpoint: "/api/leases/import",
+    onSuccess: async (data) => {
+      const payload = data as { issues?: ImportIssue[] };
+      setImportIssues(payload.issues ?? []);
+      await refreshStudents();
+    },
+    onError: (err) => {
+      setImportIssues([]);
+      setError(err);
+    },
+    acceptedTypes: ".json",
+  });
+
   const columns: ColumnDef<StudentRow>[] = [
     {
       accessorKey: "idOld",
@@ -216,6 +239,18 @@ export function StudentsManager({ initialStudents, canManage }: Props) {
         ]
       : []),
     {
+      id: "activeLeasesCount",
+      accessorFn: (row) => row.activeLeasesCount,
+      header: "Ausgeliehen",
+      enableSorting: true,
+      sortingFn: (rowA, rowB) => rowA.original.activeLeasesCount - rowB.original.activeLeasesCount,
+      cell: ({ row }) => (
+        <span className={row.original.activeLeasesCount > 0 ? "font-medium text-amber-700" : "text-[#364152]"}>
+          {row.original.activeLeasesCount}
+        </span>
+      ),
+    },
+    {
       id: "createdAt",
       accessorFn: (row) => row.createdAt,
       header: "Importiert",
@@ -288,6 +323,13 @@ export function StudentsManager({ initialStudents, canManage }: Props) {
 
     clearWibStatus();
     triggerWibFileInput();
+  }
+
+  function handleStartLeaseImport() {
+    clearLeaseStatus();
+    setError(null);
+    setImportIssues([]);
+    triggerLeaseFileInput();
   }
 
   async function handleUpdateStatus(id: number, status: StudentStatus) {
@@ -550,6 +592,9 @@ export function StudentsManager({ initialStudents, canManage }: Props) {
           <Button size="sm" variant="outline" onClick={() => void handlePreviewNameFixes()} disabled={nameFixLoading}>
             Namenkodierung prüfen
           </Button>
+          <Button size="sm" variant="outline" onClick={handleStartLeaseImport}>
+            Ausleihen importieren
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
@@ -560,6 +605,16 @@ export function StudentsManager({ initialStudents, canManage }: Props) {
             title="JSON-Datei mit Schülereinträgen hochladen"
           />
           <span className="text-xs text-[#364152]">JSON: idOld, firstname, lastname, course</span>
+          <input
+            ref={leaseFileInputRef}
+            type="file"
+            accept={leaseAcceptedTypes}
+            className="hidden"
+            onChange={handleLeaseFileChange}
+            aria-label="JSON-Datei zum Importieren von Ausleihen"
+            title="JSON-Datei mit Ausleihen (studentId/itemId) hochladen"
+          />
+          <span className="text-xs text-[#364152]">Leases JSON: leased, returned, active, itemId, studentId</span>
         </div>
       )}
 
@@ -582,8 +637,11 @@ export function StudentsManager({ initialStudents, canManage }: Props) {
 
       {status && <p className="text-sm text-green-700">{status}</p>}
       {wibStatus && <p className="text-sm text-green-700">{wibStatus}</p>}
+      {leaseStatus && <p className="text-sm text-green-700">{leaseStatus}</p>}
       {nameFixInfo && <p className="text-sm text-[#1f4b2a]">{nameFixInfo}</p>}
-      {(error || uploadError || wibUploadError) && <p className="text-sm text-red-600">{error || uploadError || wibUploadError}</p>}
+      {(error || uploadError || wibUploadError || leaseUploadError) && (
+        <p className="text-sm text-red-600">{error || uploadError || wibUploadError || leaseUploadError}</p>
+      )}
       {importIssues.length > 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           <p className="font-medium">Übersprungene Zeilen</p>
@@ -666,7 +724,13 @@ export function StudentsManager({ initialStudents, canManage }: Props) {
         </div>
       )}
 
-      <DataTable columns={columns} data={filteredStudents} emptyMessage="Keine Schüler gefunden." enableSorting />
+      <DataTable
+        columns={columns}
+        data={filteredStudents}
+        emptyMessage="Keine Schüler gefunden."
+        enableSorting
+        onRowClick={(student) => router.push(`/students/${student.id}/leases`)}
+      />
 
       {historyOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

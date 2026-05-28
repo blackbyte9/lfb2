@@ -11,7 +11,13 @@ export async function GET() {
       isbn: true,
       name: true,
       createdAt: true,
-      _count: { select: { items: { where: { status: { not: "REMOVED" } } } } },
+      items: {
+        where: { status: { not: "REMOVED" } },
+        select: {
+          id: true,
+          _count: { select: { leases: { where: { active: true } } } },
+        },
+      },
     },
   });
 
@@ -21,7 +27,8 @@ export async function GET() {
       isbn: book.isbn,
       name: book.name,
       createdAt: book.createdAt,
-      itemCount: book._count.items,
+      itemCount: book.items.length,
+      leasedCount: book.items.filter((item) => item._count.leases > 0).length,
     })),
   );
 }
@@ -44,7 +51,7 @@ export async function POST(request: NextRequest) {
       data: parsed.data,
       select: { id: true, isbn: true, name: true, createdAt: true },
     });
-    return NextResponse.json({ ...book, itemCount: 0 }, { status: 201 });
+    return NextResponse.json({ ...book, itemCount: 0, leasedCount: 0 }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "ISBN bereits vorhanden" }, { status: 409 });
   }

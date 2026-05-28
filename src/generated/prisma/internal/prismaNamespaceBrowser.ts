@@ -59,6 +59,7 @@ export const ModelName = {
   Verification: 'Verification',
   Book: 'Book',
   Item: 'Item',
+  Lease: 'Lease',
   Test: 'Test'
 } as const
 
@@ -190,6 +191,20 @@ export const ItemScalarFieldEnum = {
 } as const
 
 export type ItemScalarFieldEnum = (typeof ItemScalarFieldEnum)[keyof typeof ItemScalarFieldEnum]
+
+
+export const LeaseScalarFieldEnum = {
+  id: 'id',
+  leasedAt: 'leasedAt',
+  returnedAt: 'returnedAt',
+  active: 'active',
+  studentId: 'studentId',
+  itemId: 'itemId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type LeaseScalarFieldEnum = (typeof LeaseScalarFieldEnum)[keyof typeof LeaseScalarFieldEnum]
 
 
 export const TestScalarFieldEnum = {
