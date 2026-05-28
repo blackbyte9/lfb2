@@ -18,7 +18,6 @@ export const auth = betterAuth({
     minPasswordLength: 8,
   },
   plugins: [
-    nextCookies(),
     username({
       minUsernameLength: 3,
       maxUsernameLength: 30,
@@ -32,6 +31,7 @@ export const auth = betterAuth({
         ADMIN: adminAc,
       },
     }),
+    nextCookies(),
   ],
 });
 

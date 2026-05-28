@@ -142,10 +142,10 @@ export type VerificationScalarFieldEnum = (typeof VerificationScalarFieldEnum)[k
 
 export const BookScalarFieldEnum = {
   id: 'id',
-  title: 'title',
-  author: 'author',
-  subject: 'subject',
-  createdAt: 'createdAt'
+  isbn: 'isbn',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type BookScalarFieldEnum = (typeof BookScalarFieldEnum)[keyof typeof BookScalarFieldEnum]

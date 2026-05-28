@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import {
   type ColumnDef,
+  type SortingState,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,6 +18,7 @@ type DataTableProps<TData, TValue> = {
   emptyMessage?: string;
   initialPageSize?: number;
   pageSizeOptions?: number[];
+  enableSorting?: boolean;
 };
 
 export function DataTable<TData, TValue>({
@@ -23,12 +27,19 @@ export function DataTable<TData, TValue>({
   emptyMessage = "Keine Daten vorhanden.",
   initialPageSize = 10,
   pageSizeOptions = [10, 20, 50],
+  enableSorting = false,
 }: DataTableProps<TData, TValue>) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    ...(enableSorting && { getSortedRowModel: getSortedRowModel() }),
+    state: enableSorting ? { sorting } : undefined,
+    onSortingChange: enableSorting ? setSorting : undefined,
     initialState: {
       pagination: {
         pageIndex: 0,
@@ -44,8 +55,19 @@ export function DataTable<TData, TValue>({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                <TableHead
+                  key={header.id}
+                  onClick={enableSorting && header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
+                  className={enableSorting && header.column.getCanSort() ? "cursor-pointer select-none hover:text-[#006b2d]" : ""}
+                >
+                  <div className="flex items-center gap-1">
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {enableSorting && header.column.getCanSort() && (
+                      <span className="text-xs">
+                        {header.column.getIsSorted() === "asc" ? "↑" : header.column.getIsSorted() === "desc" ? "↓" : ""}
+                      </span>
+                    )}
+                  </div>
                 </TableHead>
               ))}
             </TableRow>
