@@ -2,8 +2,8 @@ import Link from "next/link";
 import { registerAction } from "@/app/auth/actions";
 
 const REGISTER_ERRORS: Record<string, string> = {
-  "missing-fields": "Please complete every field.",
-  "signup-failed": "Registration failed. Username or email may already exist.",
+  "missing-fields": "Bitte fulle alle Felder aus.",
+  "signup-failed": "Registrierung fehlgeschlagen. Benutzername oder E-Mail existiert moglicherweise bereits.",
 };
 
 export default async function RegisterPage({
@@ -17,9 +17,9 @@ export default async function RegisterPage({
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 items-center justify-center px-6 py-10">
       <div className="w-full max-w-md rounded-xl border border-black/10 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-[#131820]">Register</h1>
+        <h1 className="text-2xl font-semibold text-[#131820]">Registrierung</h1>
         <p className="mt-1 text-sm text-[#364152]">
-          New accounts are created with role <strong>GUEST</strong>.
+          Neue Konten werden mit der Rolle <strong>GUEST</strong> erstellt.
         </p>
 
         {message ? (
@@ -35,7 +35,7 @@ export default async function RegisterPage({
           </label>
 
           <label className="block text-sm font-medium text-[#111827]">
-            Email
+            E-Mail
             <input
               name="email"
               type="email"
@@ -45,7 +45,7 @@ export default async function RegisterPage({
           </label>
 
           <label className="block text-sm font-medium text-[#111827]">
-            Username
+            Benutzername
             <input
               name="username"
               autoComplete="username"
@@ -54,7 +54,7 @@ export default async function RegisterPage({
           </label>
 
           <label className="block text-sm font-medium text-[#111827]">
-            Password
+            Passwort
             <input
               name="password"
               type="password"
@@ -67,12 +67,12 @@ export default async function RegisterPage({
             type="submit"
             className="w-full rounded-md bg-[#006b2d] px-4 py-2 text-sm font-semibold text-white"
           >
-            Create account
+            Konto erstellen
           </button>
         </form>
 
         <p className="mt-4 text-sm text-[#364152]">
-          Already have an account? <Link href="/login" className="font-semibold text-[#006b2d]">Login here</Link>
+          Bereits ein Konto? <Link href="/login" className="font-semibold text-[#006b2d]">Hier anmelden</Link>
         </p>
       </div>
     </main>

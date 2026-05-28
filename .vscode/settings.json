@@ -2,5 +2,12 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "prettier.requireConfig": true,
-  "cSpell.words": ["datasource"]
+  "cSpell.words": ["datasource"],
+  "cSpell.ignorePaths": [
+    "**/*config.{js,cjs,mjs,ts,json,yml,yaml}",
+    "**/tsconfig*.json",
+    "**/.eslintrc*",
+    "**/.prettierrc*",
+    "**/components.json"
+  ]
 }

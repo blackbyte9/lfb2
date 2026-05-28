@@ -15,27 +15,27 @@ export default async function Home() {
         {session ? (
           <div className="rounded-lg border border-black/10 bg-white px-4 py-3 text-sm">
             <p>
-              Signed in as <strong>{session.user.name}</strong> (@{session.user.username ?? "-"})
+              Angemeldet als <strong>{session.user.name}</strong> (@{session.user.username ?? "-"})
             </p>
             <p>
-              Current role: <strong>{session.user.role}</strong>
+              Aktuelle Rolle: <strong>{session.user.role}</strong>
             </p>
             {session.user.role === "ADMIN" ? (
               <Link href="/admin" className="mt-2 inline-block font-semibold text-[#006b2d]">
-                Open admin panel
+                Zur Verwaltung
               </Link>
             ) : null}
           </div>
         ) : (
           <div className="rounded-lg border border-black/10 bg-white px-4 py-3 text-sm">
-            <p>You are not signed in.</p>
+            <p>Du bist nicht angemeldet.</p>
             <p className="mt-1">
               <Link href="/login" className="font-semibold text-[#006b2d]">
-                Login
+                Anmelden
               </Link>{" "}
-              or{" "}
+              oder{" "}
               <Link href="/register" className="font-semibold text-[#006b2d]">
-                register
+                registrieren
               </Link>
               .
             </p>

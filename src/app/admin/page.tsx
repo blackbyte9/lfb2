@@ -3,12 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { updateUserPasswordAction } from "@/app/admin/actions";
-import { RoleSelect } from "@/components/admin/role-select";
+import { AdminUsersTable } from "@/components/admin/admin-users-table";
 
 const ADMIN_ERRORS: Record<string, string> = {
-  "invalid-role": "Could not update role. Please choose a valid role.",
-  "invalid-password": "Password must be at least 8 characters long.",
+  "invalid-role": "Die Rolle konnte nicht aktualisiert werden. Bitte wähle eine gültige Rolle.",
+  "invalid-password": "Das Passwort muss mindestens 8 Zeichen lang sein.",
 };
 
 export default async function AdminPage({
@@ -26,10 +25,10 @@ export default async function AdminPage({
     return (
       <main className="mx-auto flex w-full max-w-5xl flex-1 px-6 py-8">
         <div className="w-full rounded-xl border border-black/10 bg-white p-6 shadow-sm">
-          <h1 className="text-2xl font-semibold text-[#131820]">Admin Panel</h1>
-          <p className="mt-2 text-[#364152]">This area is only accessible to users with role ADMIN.</p>
+          <h1 className="text-2xl font-semibold text-[#131820]">Verwaltung</h1>
+          <p className="mt-2 text-[#364152]">Dieser Bereich ist nur für Benutzer mit der Rolle ADMIN zugänglich.</p>
           <Link href="/" className="mt-4 inline-block font-semibold text-[#006b2d]">
-            Back to home
+            Zurück zur Startseite
           </Link>
         </div>
       </main>
@@ -51,12 +50,17 @@ export default async function AdminPage({
     },
   });
 
+  const tableRows = users.map((user) => ({
+    ...user,
+    createdAt: user.createdAt.toISOString(),
+  }));
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 px-6 py-8">
       <div className="w-full space-y-4 rounded-xl border border-black/10 bg-white p-6 shadow-sm">
         <div>
-          <h1 className="text-2xl font-semibold text-[#131820]">Admin Panel</h1>
-          <p className="text-sm text-[#364152]">Manage user type and reset passwords.</p>
+          <h1 className="text-2xl font-semibold text-[#131820]">Verwaltung</h1>
+          <p className="text-sm text-[#364152]">Benutzertypen verwalten und Passwörter zurücksetzen.</p>
         </div>
 
         {errorMessage ? (
@@ -65,50 +69,8 @@ export default async function AdminPage({
           </p>
         ) : null}
 
-        <div className="overflow-x-auto rounded-lg border border-black/10">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-[#f2f4f8] text-[#111827]">
-              <tr>
-                <th className="px-3 py-2 font-semibold">User</th>
-                <th className="px-3 py-2 font-semibold">Type</th>
-                <th className="px-3 py-2 font-semibold">Reset Password</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="border-t border-black/10 align-top">
-                  <td className="px-3 py-3">
-                    <p className="font-medium text-[#131820]">{user.name}</p>
-                    <p className="text-[#364152]">{user.email}</p>
-                    <p className="text-xs text-[#4b5563]">
-                      @{user.username ?? "no-username"} | {user.createdAt.toLocaleDateString()}
-                    </p>
-                  </td>
-                  <td className="px-3 py-3">
-                    <RoleSelect userId={user.id} userName={user.name} role={user.role} />
-                  </td>
-                  <td className="px-3 py-3">
-                    <form action={updateUserPasswordAction} className="flex items-center gap-2">
-                      <input name="userId" type="hidden" value={user.id} />
-                      <input
-                        name="newPassword"
-                        type="password"
-                        minLength={8}
-                        placeholder="new password"
-                        className="w-44 rounded-md border border-black/20 px-2 py-1"
-                      />
-                      <button
-                        type="submit"
-                        className="rounded-md bg-[#111827] px-3 py-1 text-xs font-semibold text-white"
-                      >
-                        Update
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="rounded-lg border border-black/10">
+          <AdminUsersTable users={tableRows} />
         </div>
       </div>
     </main>
