@@ -51,6 +51,8 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  Student: 'Student',
+  StudentGradeHistory: 'StudentGradeHistory',
   User: 'User',
   Session: 'Session',
   Account: 'Account',
@@ -74,6 +76,33 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 } as const)
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
+
+
+export const StudentScalarFieldEnum = {
+  id: 'id',
+  idOld: 'idOld',
+  firstname: 'firstname',
+  lastname: 'lastname',
+  course: 'course',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StudentScalarFieldEnum = (typeof StudentScalarFieldEnum)[keyof typeof StudentScalarFieldEnum]
+
+
+export const StudentGradeHistoryScalarFieldEnum = {
+  id: 'id',
+  studentId: 'studentId',
+  schoolYear: 'schoolYear',
+  grade: 'grade',
+  source: 'source',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StudentGradeHistoryScalarFieldEnum = (typeof StudentGradeHistoryScalarFieldEnum)[keyof typeof StudentGradeHistoryScalarFieldEnum]
 
 
 export const UserScalarFieldEnum = {

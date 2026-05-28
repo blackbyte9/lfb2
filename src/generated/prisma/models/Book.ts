@@ -358,14 +358,6 @@ export type BookScalarRelationFilter = {
   isNot?: Prisma.BookWhereInput
 }
 
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type BookCreateNestedOneWithoutItemsInput = {
   create?: Prisma.XOR<Prisma.BookCreateWithoutItemsInput, Prisma.BookUncheckedCreateWithoutItemsInput>
   connectOrCreate?: Prisma.BookCreateOrConnectWithoutItemsInput

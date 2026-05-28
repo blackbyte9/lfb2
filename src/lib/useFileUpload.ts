@@ -5,9 +5,10 @@ type FileUploadConfig = {
   onSuccess?: (data: unknown) => void;
   onError?: (error: string) => void;
   acceptedTypes?: string;
+  appendFormData?: (formData: FormData) => void;
 };
 
-export function useFileUpload({ endpoint, onSuccess, onError, acceptedTypes = "*" }: FileUploadConfig) {
+export function useFileUpload({ endpoint, onSuccess, onError, acceptedTypes = "*", appendFormData }: FileUploadConfig) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +25,7 @@ export function useFileUpload({ endpoint, onSuccess, onError, acceptedTypes = "*
     try {
       const formData = new FormData();
       formData.append("file", file);
+      appendFormData?.(formData);
 
       const res = await fetch(endpoint, { method: "POST", body: formData });
       const data = (await res.json()) as { message?: string; error?: string };

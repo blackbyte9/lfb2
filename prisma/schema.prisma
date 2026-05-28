@@ -20,6 +20,43 @@ enum ItemStatus {
   REMOVED
 }
 
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  SPECIAL
+}
+
+model Student {
+  id           Int                  @id @default(autoincrement())
+  idOld        String?              @unique
+  firstname    String
+  lastname     String
+  course       String
+  status       StudentStatus        @default(ACTIVE)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  gradeHistory StudentGradeHistory[]
+
+  @@index([lastname, firstname])
+  @@index([course])
+  @@index([status])
+}
+
+model StudentGradeHistory {
+  id         Int      @id @default(autoincrement())
+  studentId  Int
+  schoolYear String
+  grade      String
+  source     String   @default("WIB")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, schoolYear, source])
+  @@index([schoolYear])
+  @@index([grade])
+}
+
 model User {
   id              String    @id @default(cuid())
   name            String
