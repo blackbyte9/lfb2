@@ -1,11 +1,17 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { canAccessStudents } from "@/lib/students-access";
 import { StudentsManager } from "@/components/students/students-manager";
 
 export default async function StudentsPage() {
   const session = await auth.api.getSession({ headers: await headers() });
+  const canAccess = canAccessStudents(session?.user.role);
+  if (!canAccess) {
+    redirect("/login");
+  }
 
   const students = await prisma.student.findMany({
     orderBy: [{ lastname: "asc" }, { firstname: "asc" }, { idOld: "asc" }],
@@ -30,7 +36,7 @@ export default async function StudentsPage() {
     createdAt: student.createdAt.toISOString(),
   }));
 
-  const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
+  const canManage = canAccess;
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 px-6 py-8">

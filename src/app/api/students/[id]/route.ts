@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { canAccessStudents } from "@/lib/students-access";
 
 const ALLOWED_STATUSES = ["ACTIVE", "INACTIVE", "SPECIAL"] as const;
 type StudentStatusInput = (typeof ALLOWED_STATUSES)[number];
@@ -12,8 +13,7 @@ function isStudentStatus(value: unknown): value is StudentStatusInput {
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: request.headers });
-  const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
-  if (!canManage) {
+  if (!canAccessStudents(session?.user.role)) {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 403 });
   }
 

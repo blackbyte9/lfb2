@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { canAccessStudents } from "@/lib/students-access";
 import { logoutAction } from "@/app/auth/actions";
 
 export async function SiteHeader() {
@@ -17,9 +18,11 @@ export async function SiteHeader() {
             <Link href="/books" className="px-2 py-1 transition-opacity hover:opacity-90">
               Bücher
             </Link>
-            <Link href="/students" className="px-2 py-1 transition-opacity hover:opacity-90">
-              Schüler
-            </Link>
+            {canAccessStudents(session?.user.role) ? (
+              <Link href="/students" className="px-2 py-1 transition-opacity hover:opacity-90">
+                Schüler
+              </Link>
+            ) : null}
             {session?.user.role === "ADMIN" ? (
               <Link href="/admin" className="px-2 py-1 transition-opacity hover:opacity-90">
                 Verwaltung

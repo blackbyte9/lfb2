@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { canAccessStudents } from "@/lib/students-access";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: request.headers });
-  if (!session) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+  if (!canAccessStudents(session?.user.role)) {
+    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 403 });
   }
 
   const { id } = await params;

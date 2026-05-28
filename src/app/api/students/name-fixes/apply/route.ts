@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildStudentNameFixProposals } from "@/lib/student-name-fixes";
+import { canAccessStudents } from "@/lib/students-access";
 
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
-  const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
-  if (!canManage) {
+  if (!canAccessStudents(session?.user.role)) {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 403 });
   }
 
