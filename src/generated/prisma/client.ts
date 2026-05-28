@@ -67,6 +67,11 @@ export type Verification = Prisma.VerificationModel
  */
 export type Book = Prisma.BookModel
 /**
+ * Model Item
+ * 
+ */
+export type Item = Prisma.ItemModel
+/**
  * Model Test
  * 
  */

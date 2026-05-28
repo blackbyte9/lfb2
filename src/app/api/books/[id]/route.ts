@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: request.headers });
-  if (!session || session.user.role !== "ADMIN") {
+  const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
+  if (!canManage) {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 403 });
   }
 
@@ -37,7 +38,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: request.headers });
-  if (!session || session.user.role !== "ADMIN") {
+  const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
+  if (!canManage) {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 403 });
   }
 

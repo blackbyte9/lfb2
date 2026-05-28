@@ -6,15 +6,30 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   const books = await prisma.book.findMany({
     orderBy: { name: "asc" },
-    select: { id: true, isbn: true, name: true, createdAt: true },
+    select: {
+      id: true,
+      isbn: true,
+      name: true,
+      createdAt: true,
+      _count: { select: { items: { where: { status: { not: "REMOVED" } } } } },
+    },
   });
 
-  return NextResponse.json(books);
+  return NextResponse.json(
+    books.map((book) => ({
+      id: book.id,
+      isbn: book.isbn,
+      name: book.name,
+      createdAt: book.createdAt,
+      itemCount: book._count.items,
+    })),
+  );
 }
 
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
-  if (!session || session.user.role !== "ADMIN") {
+  const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
+  if (!canManage) {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 403 });
   }
 
@@ -27,8 +42,9 @@ export async function POST(request: NextRequest) {
   try {
     const book = await prisma.book.create({
       data: parsed.data,
+      select: { id: true, isbn: true, name: true, createdAt: true },
     });
-    return NextResponse.json(book, { status: 201 });
+    return NextResponse.json({ ...book, itemCount: 0 }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "ISBN bereits vorhanden" }, { status: 409 });
   }

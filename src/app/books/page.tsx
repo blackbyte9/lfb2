@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -9,21 +8,27 @@ import { BooksManager } from "@/components/books/books-manager";
 export default async function BooksPage() {
   const session = await auth.api.getSession({ headers: await headers() });
 
-  if (!session) {
-    redirect("/login");
-  }
-
   const books = await prisma.book.findMany({
     orderBy: { name: "asc" },
-    select: { id: true, isbn: true, name: true, createdAt: true },
+    select: {
+      id: true,
+      isbn: true,
+      name: true,
+      createdAt: true,
+      _count: { select: { items: { where: { status: { not: "REMOVED" } } } } },
+    },
   });
 
   const tableRows = books.map((book) => ({
-    ...book,
+    id: book.id,
+    isbn: book.isbn,
+    name: book.name,
+    itemCount: book._count.items,
     createdAt: book.createdAt.toISOString(),
   }));
 
-  const isAdmin = session.user.role === "ADMIN";
+  const isAdmin = session?.user.role === "ADMIN";
+  const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 px-6 py-8">
@@ -36,7 +41,7 @@ export default async function BooksPage() {
             </Link>
           )}
         </div>
-        <BooksManager initialBooks={tableRows} isAdmin={isAdmin} />
+        <BooksManager initialBooks={tableRows} canManage={canManage} />
       </div>
     </main>
   );

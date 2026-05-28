@@ -35,6 +35,36 @@ export const bookImportEntrySchema = bookCreateSchema;
 
 export const bookImportSchema = z.array(bookImportEntrySchema).min(1, "Die Datei muss mindestens einen Eintrag enthalten");
 
+export const itemStatusSchema = z.enum(["NEW", "USED", "DAMAGED", "REMOVED"]);
+
+export const itemIdSchema = z
+  .string()
+  .trim()
+  .regex(/^RSV\d{7}$/, "Item-ID muss dem Format RSV0000000 entsprechen");
+
+export const itemCreateSchema = z.object({
+  id: itemIdSchema,
+  status: itemStatusSchema.default("NEW"),
+  bookId: z.number().int().positive("Ungültige Buch-ID"),
+}).strict();
+
+export const itemUpdateSchema = z.object({
+  status: itemStatusSchema.optional(),
+  bookId: z.number().int().positive("Ungültige Buch-ID").optional(),
+}).strict();
+
+export const defaultItemImportEntrySchema = z.object({
+  id: itemIdSchema,
+  status: itemStatusSchema,
+  bookId: z.string().trim().min(1, "ISBN ist erforderlich"),
+}).strict();
+
+export const defaultItemImportSchema = z
+  .array(defaultItemImportEntrySchema)
+  .min(1, "Die Datei muss mindestens einen Eintrag enthalten");
+
 export type BookCreateInput = z.infer<typeof bookCreateSchema>;
 export type BookUpdateInput = z.infer<typeof bookUpdateSchema>;
 export type BookImportEntryInput = z.infer<typeof bookImportEntrySchema>;
+export type ItemCreateInput = z.infer<typeof itemCreateSchema>;
+export type ItemUpdateInput = z.infer<typeof itemUpdateSchema>;

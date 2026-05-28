@@ -16,3 +16,13 @@ export const UserType = {
 } as const
 
 export type UserType = (typeof UserType)[keyof typeof UserType]
+
+
+export const ItemStatus = {
+  NEW: 'NEW',
+  USED: 'USED',
+  DAMAGED: 'DAMAGED',
+  REMOVED: 'REMOVED'
+} as const
+
+export type ItemStatus = (typeof ItemStatus)[keyof typeof ItemStatus]

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,18 +12,21 @@ export type BookRow = {
   id: number;
   isbn: string;
   name: string;
+  itemCount: number;
   createdAt: string;
 };
 
 type Props = {
   initialBooks: BookRow[];
-  isAdmin: boolean;
+  canManage: boolean;
 };
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
-export function BooksManager({ initialBooks, isAdmin }: Props) {
+export function BooksManager({ initialBooks, canManage }: Props) {
+  const router = useRouter();
   const [books, setBooks] = useState<BookRow[]>(initialBooks);
+  const [searchItemId, setSearchItemId] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editIsbn, setEditIsbn] = useState("");
   const [editName, setEditName] = useState("");
@@ -33,7 +37,7 @@ export function BooksManager({ initialBooks, isAdmin }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(20);
-  const [sortBy, setSortBy] = useState<"isbn" | "name">("name");
+  const [sortBy, setSortBy] = useState<"isbn" | "name" | "itemCount">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const { fileInputRef, handleFileChange, triggerFileInput, status, error: uploadError, clearStatus, acceptedTypes } =
@@ -54,9 +58,10 @@ export function BooksManager({ initialBooks, isAdmin }: Props) {
   const pageCount = Math.max(1, Math.ceil(books.length / pageSize));
   const sortedBooks = useMemo(() => {
     const sorted = [...books].sort((a, b) => {
-      const aVal = sortBy === "isbn" ? a.isbn : a.name;
-      const bVal = sortBy === "isbn" ? b.isbn : b.name;
-      const cmp = aVal.localeCompare(bVal, "de");
+      const cmp =
+        sortBy === "itemCount"
+          ? a.itemCount - b.itemCount
+          : (sortBy === "isbn" ? a.isbn : a.name).localeCompare(sortBy === "isbn" ? b.isbn : b.name, "de");
       return sortOrder === "asc" ? cmp : -cmp;
     });
     return sorted;
@@ -127,9 +132,7 @@ export function BooksManager({ initialBooks, isAdmin }: Props) {
     }
     const created = (await res.json()) as BookRow;
     setBooks((prev) =>
-      [...prev, { ...created, createdAt: created.createdAt }].sort((a, b) =>
-        a.name.localeCompare(b.name, "de"),
-      ),
+      [...prev, { ...created, createdAt: created.createdAt }].sort((a, b) => a.name.localeCompare(b.name, "de")),
     );
     setIsAdding(false);
     setNewIsbn("");
@@ -149,9 +152,54 @@ export function BooksManager({ initialBooks, isAdmin }: Props) {
     setConfirmDeleteId(null);
   }
 
+  async function handleSearchItem() {
+    const trimmedItemId = searchItemId.trim().toUpperCase();
+    if (!trimmedItemId) {
+      setError("Bitte eine Item-ID eingeben");
+      return;
+    }
+
+    setError(null);
+    const res = await fetch(`/api/items/${trimmedItemId}`);
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string };
+      setError(data.error ?? "Item nicht gefunden");
+      return;
+    }
+
+    const item = (await res.json()) as { id: string; bookId: number };
+    router.push(`/books/${item.bookId}?itemId=${item.id}`);
+  }
+
   return (
     <div className="space-y-4">
-      {isAdmin && (
+      <div className="flex flex-wrap items-end gap-2 rounded-lg border border-black/10 bg-[#f2f4f8] p-3">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="search-item-id" className="text-xs font-medium text-[#364152]">
+            Item-ID suchen
+          </label>
+          <input
+            id="search-item-id"
+            type="text"
+            placeholder="RSV0010000"
+            value={searchItemId}
+            onChange={(e) => setSearchItemId(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void handleSearchItem();
+              }
+            }}
+            className="w-48 rounded border border-black/20 bg-white px-2 py-1 text-sm outline-none focus:border-[#006b2d]"
+            aria-label="Item-ID suchen"
+          />
+        </div>
+        <Button size="sm" variant="outline" onClick={() => void handleSearchItem()}>
+          Zu Item springen
+        </Button>
+      </div>
+
+      {canManage && (
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
@@ -174,11 +222,11 @@ export function BooksManager({ initialBooks, isAdmin }: Props) {
           >
             Aus Datei importieren
           </Button>
-          <input 
-            ref={fileInputRef} 
-            type="file" 
-            accept={acceptedTypes} 
-            className="hidden" 
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={acceptedTypes}
+            className="hidden"
             onChange={handleFileChange}
             aria-label="JSON-Datei zum Importieren von Büchern"
             title="JSON-Datei mit Büchereinträgen hochladen"
@@ -186,10 +234,12 @@ export function BooksManager({ initialBooks, isAdmin }: Props) {
         </div>
       )}
 
+      <p className="text-sm text-[#364152]">Zeile anklicken, um zur Item-Liste dieses Buchs zu wechseln.</p>
+
       {status && <p className="text-sm text-green-700">{status}</p>}
       {(error || uploadError) && <p className="text-sm text-red-600">{error || uploadError}</p>}
 
-      {isAdmin && isAdding && (
+      {canManage && isAdding && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-black/10 bg-[#f2f4f8] p-3">
           <div className="flex flex-col gap-1">
             <label htmlFor="new-isbn" className="text-xs font-medium text-[#364152]">
@@ -275,19 +325,37 @@ export function BooksManager({ initialBooks, isAdmin }: Props) {
                   </span>
                 </button>
               </TableHead>
-              {isAdmin && <TableHead className="w-52">Aktionen</TableHead>}
+              <TableHead className="w-28 text-right">
+                <button
+                  className="ml-auto flex items-center gap-1 hover:text-[#006b2d]"
+                  onClick={() => {
+                    if (sortBy === "itemCount") {
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortBy("itemCount");
+                      setSortOrder("asc");
+                    }
+                  }}
+                >
+                  Items
+                  <span className="text-xs">
+                    {sortBy === "itemCount" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+                  </span>
+                </button>
+              </TableHead>
+              {canManage && <TableHead className="w-52">Aktionen</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {pagedBooks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 3 : 2} className="py-6 text-center text-[#364152]">
+                <TableCell colSpan={canManage ? 4 : 3} className="py-6 text-center text-[#364152]">
                   Keine Bücher vorhanden
                 </TableCell>
               </TableRow>
             ) : (
               pagedBooks.map((book) => (
-                <TableRow key={book.id}>
+                <TableRow key={book.id} onClick={() => router.push(`/books/${book.id}`)} className="cursor-pointer">
                   <TableCell>
                     {editingId === book.id ? (
                       <input
@@ -316,36 +384,72 @@ export function BooksManager({ initialBooks, isAdmin }: Props) {
                       book.name
                     )}
                   </TableCell>
-                  {isAdmin && (
+                  <TableCell className="text-right font-medium text-[#364152]">{book.itemCount}</TableCell>
+                  {canManage && (
                     <TableCell>
                       {editingId === book.id ? (
                         <div className="flex gap-1">
-                          <Button size="xs" onClick={() => saveEdit(book.id)}>
+                          <Button
+                            size="xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void saveEdit(book.id);
+                            }}
+                          >
                             Speichern
                           </Button>
-                          <Button size="xs" variant="outline" onClick={cancelEdit}>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              cancelEdit();
+                            }}
+                          >
                             Abbrechen
                           </Button>
                         </div>
                       ) : confirmDeleteId === book.id ? (
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-[#364152]">Sicher?</span>
-                          <Button size="xs" variant="destructive" onClick={() => handleDelete(book.id)}>
+                          <Button
+                            size="xs"
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleDelete(book.id);
+                            }}
+                          >
                             Ja, löschen
                           </Button>
-                          <Button size="xs" variant="outline" onClick={() => setConfirmDeleteId(null)}>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteId(null);
+                            }}
+                          >
                             Abbrechen
                           </Button>
                         </div>
                       ) : (
                         <div className="flex gap-1">
-                          <Button size="xs" variant="outline" onClick={() => startEdit(book)}>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEdit(book);
+                            }}
+                          >
                             Bearbeiten
                           </Button>
                           <Button
                             size="xs"
                             variant="outline"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setConfirmDeleteId(book.id);
                               setEditingId(null);
                             }}

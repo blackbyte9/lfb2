@@ -14,11 +14,9 @@ export async function SiteHeader() {
             <Link href="/" className="px-2 py-1 transition-opacity hover:opacity-90">
               LFB2
             </Link>
-            {session ? (
-              <Link href="/books" className="px-2 py-1 transition-opacity hover:opacity-90">
-                Bücher
-              </Link>
-            ) : null}
+            <Link href="/books" className="px-2 py-1 transition-opacity hover:opacity-90">
+              Bücher
+            </Link>
             {session?.user.role === "ADMIN" ? (
               <Link href="/admin" className="px-2 py-1 transition-opacity hover:opacity-90">
                 Verwaltung

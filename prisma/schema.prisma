@@ -13,6 +13,13 @@ enum UserType {
   ADMIN
 }
 
+enum ItemStatus {
+  NEW
+  USED
+  DAMAGED
+  REMOVED
+}
+
 model User {
   id              String    @id @default(cuid())
   name            String
@@ -83,6 +90,18 @@ model Book {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  items     Item[]
+}
+
+model Item {
+  id        String     @id
+  status    ItemStatus @default(NEW)
+  bookId    Int
+  book      Book       @relation(fields: [bookId], references: [id])
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([bookId])
 }
 
 model Test {
