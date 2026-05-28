@@ -1,25 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { bookImportSchema } from "@/lib/book-schemas";
+import { readUploadedFileText, runManagedImport } from "@/lib/import-route";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
-  if (!canManage) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 403 });
-  }
-
-  try {
-    const formData = await request.formData();
-    const file = formData.get("file");
-    if (!file || typeof file === "string") {
-      return NextResponse.json({ error: "Keine Datei hochgeladen" }, { status: 400 });
-    }
-    const text = await (file as Blob).text();
+  return runManagedImport(request, {
+    readText: () => readUploadedFileText(request),
+    importText: async (text) => {
     const parsed = bookImportSchema.safeParse(JSON.parse(text));
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Ungültige JSON-Datei" }, { status: 400 });
+      throw new Error(parsed.error.issues[0]?.message ?? "Ungültige JSON-Datei");
     }
 
     for (const entry of parsed.data) {
@@ -34,7 +24,6 @@ export async function POST(request: NextRequest) {
       message: `${parsed.data.length} Bücher erfolgreich importiert`,
       imported: parsed.data.length,
     });
-  } catch {
-    return NextResponse.json({ error: "Ungültige JSON-Datei" }, { status: 400 });
-  }
+    },
+  });
 }

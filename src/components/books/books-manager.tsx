@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { EditableTableRow } from "@/components/ui/editable-table-row";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortHeaderButton } from "@/components/ui/sort-header-button";
 import { bookCreateSchema } from "@/lib/book-schemas";
 import { useFileUpload } from "@/lib/useFileUpload";
 
@@ -290,8 +292,10 @@ export function BooksManager({ initialBooks, canManage }: Props) {
           <TableHeader className="bg-[#f2f4f8]">
             <TableRow>
               <TableHead className="w-44">
-                <button
-                  className="flex items-center gap-1 hover:text-[#006b2d]"
+                <SortHeaderButton
+                  label="ISBN"
+                  active={sortBy === "isbn"}
+                  direction={sortOrder}
                   onClick={() => {
                     if (sortBy === "isbn") {
                       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -300,16 +304,13 @@ export function BooksManager({ initialBooks, canManage }: Props) {
                       setSortOrder("asc");
                     }
                   }}
-                >
-                  ISBN
-                  <span className="text-xs">
-                    {sortBy === "isbn" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
-                  </span>
-                </button>
+                />
               </TableHead>
               <TableHead>
-                <button
-                  className="flex items-center gap-1 hover:text-[#006b2d]"
+                <SortHeaderButton
+                  label="Titel"
+                  active={sortBy === "name"}
+                  direction={sortOrder}
                   onClick={() => {
                     if (sortBy === "name") {
                       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -318,16 +319,14 @@ export function BooksManager({ initialBooks, canManage }: Props) {
                       setSortOrder("asc");
                     }
                   }}
-                >
-                  Titel
-                  <span className="text-xs">
-                    {sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
-                  </span>
-                </button>
+                />
               </TableHead>
               <TableHead className="w-28 text-right">
-                <button
-                  className="ml-auto flex items-center gap-1 hover:text-[#006b2d]"
+                <SortHeaderButton
+                  label="Items"
+                  active={sortBy === "itemCount"}
+                  direction={sortOrder}
+                  className="ml-auto"
                   onClick={() => {
                     if (sortBy === "itemCount") {
                       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -336,12 +335,7 @@ export function BooksManager({ initialBooks, canManage }: Props) {
                       setSortOrder("asc");
                     }
                   }}
-                >
-                  Items
-                  <span className="text-xs">
-                    {sortBy === "itemCount" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
-                  </span>
-                </button>
+                />
               </TableHead>
               {canManage && <TableHead className="w-52">Aktionen</TableHead>}
             </TableRow>
@@ -355,112 +349,56 @@ export function BooksManager({ initialBooks, canManage }: Props) {
               </TableRow>
             ) : (
               pagedBooks.map((book) => (
-                <TableRow key={book.id} onClick={() => router.push(`/books/${book.id}`)} className="cursor-pointer">
-                  <TableCell>
-                    {editingId === book.id ? (
-                      <input
-                        type="text"
-                        value={editIsbn}
-                        onChange={(e) => setEditIsbn(e.target.value)}
-                        className="w-full rounded border border-black/20 bg-white px-2 py-1 text-sm outline-none focus:border-[#006b2d]"
-                        aria-label={`ISBN für Buch ${book.id}`}
-                        placeholder="ISBN"
-                      />
-                    ) : (
-                      book.isbn
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingId === book.id ? (
-                      <input
-                        type="text"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="w-full rounded border border-black/20 bg-white px-2 py-1 text-sm outline-none focus:border-[#006b2d]"
-                        aria-label={`Titel für Buch ${book.id}`}
-                        placeholder="Titel"
-                      />
-                    ) : (
-                      book.name
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right font-medium text-[#364152]">{book.itemCount}</TableCell>
-                  {canManage && (
-                    <TableCell>
-                      {editingId === book.id ? (
-                        <div className="flex gap-1">
-                          <Button
-                            size="xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void saveEdit(book.id);
-                            }}
-                          >
-                            Speichern
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              cancelEdit();
-                            }}
-                          >
-                            Abbrechen
-                          </Button>
-                        </div>
-                      ) : confirmDeleteId === book.id ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-[#364152]">Sicher?</span>
-                          <Button
-                            size="xs"
-                            variant="destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void handleDelete(book.id);
-                            }}
-                          >
-                            Ja, löschen
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmDeleteId(null);
-                            }}
-                          >
-                            Abbrechen
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-1">
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEdit(book);
-                            }}
-                          >
-                            Bearbeiten
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmDeleteId(book.id);
-                              setEditingId(null);
-                            }}
-                          >
-                            Löschen
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
+                <EditableTableRow
+                  key={book.id}
+                  isEditing={editingId === book.id}
+                  isDeleting={confirmDeleteId === book.id}
+                  canManage={canManage}
+                  onRowClick={editingId === book.id || confirmDeleteId === book.id ? undefined : () => router.push(`/books/${book.id}`)}
+                  rowClassName={editingId === book.id || confirmDeleteId === book.id ? "" : "cursor-pointer"}
+                  actionsColumnClassName="w-52"
+                  renderViewCells={() => (
+                    <>
+                      <TableCell>{book.isbn}</TableCell>
+                      <TableCell>{book.name}</TableCell>
+                      <TableCell className="text-right font-medium text-[#364152]">{book.itemCount}</TableCell>
+                    </>
                   )}
-                </TableRow>
+                  renderEditCells={() => (
+                    <>
+                      <TableCell>
+                        <input
+                          type="text"
+                          value={editIsbn}
+                          onChange={(e) => setEditIsbn(e.target.value)}
+                          className="w-full rounded border border-black/20 bg-white px-2 py-1 text-sm outline-none focus:border-[#006b2d]"
+                          aria-label={`ISBN für Buch ${book.id}`}
+                          placeholder="ISBN"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="w-full rounded border border-black/20 bg-white px-2 py-1 text-sm outline-none focus:border-[#006b2d]"
+                          aria-label={`Titel für Buch ${book.id}`}
+                          placeholder="Titel"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right font-medium text-[#364152]">{book.itemCount}</TableCell>
+                    </>
+                  )}
+                  onStartEdit={() => startEdit(book)}
+                  onSaveEdit={() => void saveEdit(book.id)}
+                  onCancelEdit={cancelEdit}
+                  onStartDelete={() => {
+                    setConfirmDeleteId(book.id);
+                    setEditingId(null);
+                  }}
+                  onConfirmDelete={() => void handleDelete(book.id)}
+                  onCancelDelete={() => setConfirmDeleteId(null)}
+                />
               ))
             )}
           </TableBody>

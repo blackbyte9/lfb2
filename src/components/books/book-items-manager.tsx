@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortHeaderButton } from "@/components/ui/sort-header-button";
 import { itemCreateSchema } from "@/lib/book-schemas";
 import { useFileUpload } from "@/lib/useFileUpload";
 
@@ -368,16 +369,10 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
           <TableHeader className="bg-[#f2f4f8]">
             <TableRow>
               <TableHead>
-                <button className="flex items-center gap-1 hover:text-[#006b2d]" onClick={() => toggleSort("id")}>
-                  Item-ID
-                  <span className="text-xs">{sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}</span>
-                </button>
+                <SortHeaderButton label="Item-ID" active={sortBy === "id"} direction={sortOrder} onClick={() => toggleSort("id")} />
               </TableHead>
               <TableHead>
-                <button className="flex items-center gap-1 hover:text-[#006b2d]" onClick={() => toggleSort("status")}>
-                  Status
-                  <span className="text-xs">{sortBy === "status" ? (sortOrder === "asc" ? "↑" : "↓") : ""}</span>
-                </button>
+                <SortHeaderButton label="Status" active={sortBy === "status"} direction={sortOrder} onClick={() => toggleSort("status")} />
               </TableHead>
               <TableHead>Erstellt</TableHead>
               {canManage && <TableHead className="w-40">Aktionen</TableHead>}

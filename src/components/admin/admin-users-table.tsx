@@ -1,7 +1,8 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { updateUserPasswordAction } from "@/app/admin/actions";
+import { AdminPasswordResetForm } from "@/components/admin/admin-password-reset-form";
+import { AdminUserSummaryCell } from "@/components/admin/admin-user-summary-cell";
 import { RoleSelect } from "@/components/admin/role-select";
 import { DataTable } from "@/components/ui/data-table";
 
@@ -20,16 +21,7 @@ const columns: ColumnDef<AdminUserRow>[] = [
     header: "Benutzer",
     cell: ({ row }) => {
       const user = row.original;
-
-      return (
-        <div>
-          <p className="font-medium text-[#131820]">{user.name}</p>
-          <p className="text-[#364152]">{user.email}</p>
-          <p className="text-xs text-[#4b5563]">
-            @{user.username ?? "kein-benutzername"} | {new Date(user.createdAt).toLocaleDateString("de-DE")}
-          </p>
-        </div>
-      );
+      return <AdminUserSummaryCell name={user.name} email={user.email} username={user.username} createdAt={user.createdAt} />;
     },
   },
   {
@@ -45,22 +37,7 @@ const columns: ColumnDef<AdminUserRow>[] = [
     header: "Passwort zurucksetzen",
     cell: ({ row }) => {
       const user = row.original;
-
-      return (
-        <form action={updateUserPasswordAction} className="flex items-center gap-2">
-          <input name="userId" type="hidden" value={user.id} />
-          <input
-            name="newPassword"
-            type="password"
-            minLength={8}
-            placeholder="neues Passwort"
-            className="w-44 rounded-md border border-black/20 px-2 py-1"
-          />
-          <button type="submit" className="rounded-md bg-[#111827] px-3 py-1 text-xs font-semibold text-white">
-            Aktualisieren
-          </button>
-        </form>
-      );
+      return <AdminPasswordResetForm userId={user.id} />;
     },
   },
 ];
