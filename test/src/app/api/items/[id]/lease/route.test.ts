@@ -129,3 +129,45 @@ test("POST /api/items/[id]/lease returns leased item snapshot", async () => {
     prisma.lease.findMany = originalFindMany;
   }
 });
+
+test("POST /api/items/[id]/lease rejects damaged items as unavailable", async () => {
+  const { POST } = await import("@/app/api/items/[id]/lease/route");
+  const { auth } = await import("@/lib/auth");
+  const { prisma } = await import("@/lib/prisma");
+
+  const originalGetSession = auth.api.getSession;
+  const originalFindUniqueStudent = prisma.student.findUnique;
+  const originalFindUniqueItem = prisma.item.findUnique;
+
+  auth.api.getSession = (async () => ({ user: { role: "USER" } })) as typeof auth.api.getSession;
+  prisma.student.findUnique = (async () => ({
+    id: 7,
+    idOld: "1001",
+    firstname: "Anna",
+    lastname: "Meyer",
+    course: "10A",
+    status: "ACTIVE",
+  })) as typeof prisma.student.findUnique;
+  prisma.item.findUnique = (async () => ({
+    id: "RSV1",
+    status: "DAMAGED",
+    book: { id: 5, name: "Book A" },
+    leases: [],
+  })) as typeof prisma.item.findUnique;
+
+  try {
+    const response = await POST(new Request("http://localhost/api/items/RSV1/lease", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentId: 7 }),
+    }) as never, { params: Promise.resolve({ id: "RSV1" }) });
+
+    assert.equal(response.status, 409);
+    const body = (await readJson(response)) as { error?: string };
+    assert.equal(body.error, "Item ist nicht verfügbar (Status: beschädigt)");
+  } finally {
+    auth.api.getSession = originalGetSession;
+    prisma.student.findUnique = originalFindUniqueStudent;
+    prisma.item.findUnique = originalFindUniqueItem;
+  }
+});

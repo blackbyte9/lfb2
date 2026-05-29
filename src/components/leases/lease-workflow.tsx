@@ -267,12 +267,12 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
   async function leaseByItemId(normalizedItemId: string) {
     if (!selectedStudent) {
       setError("Bitte zuerst einen Schüler auswählen");
-      return;
+      return false;
     }
 
     if (!itemIdSchema.safeParse(normalizedItemId).success) {
-      setError("Item-ID muss dem Format RSV0000000 entsprechen");
-      return;
+      setError("Ungültige Item-ID. Erwartetes Format: RSV + 7 Ziffern (z. B. RSV0010000).");
+      return false;
     }
 
     setIsSubmitting(true);
@@ -288,14 +288,24 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
 
       const payload = (await response.json()) as LeaseResponse;
       if (!response.ok) {
+        if (response.status === 404) {
+          setError(`Item ${normalizedItemId} wurde nicht gefunden.`);
+          return false;
+        }
+        if (response.status === 409) {
+          setError(payload.error ?? `Item ${normalizedItemId} ist nicht verfügbar.`);
+          return false;
+        }
         setError(payload.error ?? "Ausleihe fehlgeschlagen");
-        return;
+        return false;
       }
 
       setSuccess(`Item ${normalizedItemId} wurde an ${selectedStudent.lastname}, ${selectedStudent.firstname} ausgeliehen`);
       setActiveLeases(payload.activeLeases ?? []);
+      return true;
     } catch {
       setError("Ausleihe fehlgeschlagen");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -353,27 +363,36 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
         </div>
 
         {selectedStudent ? (
-          <ItemIdInput
-            id="lease-item-id"
-            label="Item-ID (Scanner)"
-            value={itemId}
-            onValueChange={(value) => {
-              setItemId(value);
-              if (!value.trim()) {
-                setError(null);
-              }
-            }}
-            onSubmit={(normalized) => leaseByItemId(normalized)}
-            submitTrigger={itemSubmitTrigger}
-            clearOnSubmit
-            flavor="lease"
-            className="w-full"
-            keepFocus
-            autoSubmitOnValid
-            clearOnInvalidPrefix
-            disabled={isSubmitting}
-            ariaLabel="Item-ID für Ausleihe"
-          />
+          <>
+            <ItemIdInput
+              id="lease-item-id"
+              label="Item-ID (Scanner)"
+              value={itemId}
+              onValueChange={(value) => {
+                setItemId(value);
+                if (value.trim()) {
+                  setError(null);
+                }
+              }}
+              onInvalidValue={(value) => {
+                if (value.trim().length > 0) {
+                  setError("Ungültige Item-ID. Erwartetes Format: RSV + 7 Ziffern (z. B. RSV0010000).");
+                }
+              }}
+              onSubmit={(normalized) => leaseByItemId(normalized)}
+              submitTrigger={itemSubmitTrigger}
+              clearOnSubmit
+              flavor="lease"
+              className="w-full"
+              keepFocus
+              disableWhileSubmitting={false}
+              autoSubmitOnValid
+              autoSubmitMinLength={10}
+              clearOnInvalidPrefix
+              ariaLabel="Item-ID für Ausleihe"
+            />
+            <p className="text-xs text-[#4b5563]">Erwartetes Format: RSV + 7 Ziffern (z. B. RSV0010000).</p>
+          </>
         ) : (
           <div className="rounded-md border border-dashed border-black/20 bg-white/70 p-3 text-sm text-[#4b5563]">
             Wähle zuerst einen Schüler aus. Danach ist die Item-Eingabe aktiv.

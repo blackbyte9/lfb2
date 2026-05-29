@@ -64,6 +64,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Item nicht gefunden" }, { status: 404 });
   }
 
+  if (item.status === "DAMAGED") {
+    return NextResponse.json({ error: "Item ist nicht verfügbar (Status: beschädigt)" }, { status: 409 });
+  }
+
   if (item.leases.length > 0) {
     return NextResponse.json({ error: "Item ist bereits ausgeliehen" }, { status: 409 });
   }

@@ -79,7 +79,7 @@ export function ReturnWorkflow() {
 
   async function handleSubmitByItemId(normalized: string) {
     if (!itemIdSchema.safeParse(normalized).success) {
-      setError("Item-ID muss dem Format RSV0000000 entsprechen");
+      setError("Ungültige Item-ID");
       return;
     }
 
@@ -103,9 +103,10 @@ export function ReturnWorkflow() {
           flavor="return"
           className="w-full"
           keepFocus
+          disableWhileSubmitting={false}
           autoSubmitOnValid
+          autoSubmitMinLength={10}
           clearOnInvalidPrefix
-          disabled={isSubmitting}
           ariaLabel="Item-ID für Rückgabe"
         />
         <p className="mt-2 text-xs text-[#4b5563]">Die Rückgabe startet automatisch, sobald das Format `RSV0000000` vollständig ist.</p>

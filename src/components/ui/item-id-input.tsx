@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { itemIdSchema } from "@/lib/book-schemas";
 
@@ -11,7 +11,7 @@ type Props = {
   label: string;
   value: string;
   onValueChange: (value: string) => void;
-  onSubmit?: (normalizedItemId: string) => void | Promise<void>;
+  onSubmit?: (normalizedItemId: string) => boolean | void | Promise<boolean | void>;
   submitTrigger?: number;
   clearOnSubmit?: boolean;
   placeholder?: string;
@@ -19,6 +19,9 @@ type Props = {
   flavor: ItemIdInputFlavor;
   disabled?: boolean;
   autoSubmitOnValid?: boolean;
+  autoSubmitMinLength?: number;
+  onInvalidValue?: (value: string) => void;
+  disableWhileSubmitting?: boolean;
   keepFocus?: boolean;
   clearOnInvalidPrefix?: boolean;
   className?: string;
@@ -49,6 +52,9 @@ export function ItemIdInput({
   flavor,
   disabled = false,
   autoSubmitOnValid = false,
+  autoSubmitMinLength = 10,
+  onInvalidValue,
+  disableWhileSubmitting = true,
   keepFocus = false,
   clearOnInvalidPrefix = false,
   className = "w-48",
@@ -60,7 +66,7 @@ export function ItemIdInput({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const shouldClearOnInvalidPrefix = clearOnInvalidPrefix || flavor === "search";
 
-  function scheduleValidationReset(delayMs = 450) {
+  const scheduleValidationReset = useCallback((delayMs = 450) => {
     if (validationResetTimerRef.current !== null) {
       window.clearTimeout(validationResetTimerRef.current);
     }
@@ -68,11 +74,11 @@ export function ItemIdInput({
       setValidationState("idle");
       validationResetTimerRef.current = null;
     }, delayMs);
-  }
+  }, []);
 
-  function focusInput() {
+  const focusInput = useCallback(() => {
     inputRef.current?.focus();
-  }
+  }, []);
 
   useEffect(() => {
     if (!keepFocus) {
@@ -95,7 +101,7 @@ export function ItemIdInput({
       window.removeEventListener("focus", onWindowFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [keepFocus]);
+  }, [focusInput, keepFocus]);
 
   useEffect(() => {
     return () => {
@@ -105,7 +111,7 @@ export function ItemIdInput({
     };
   }, []);
 
-  async function submit(normalized: string) {
+  const submit = useCallback(async (normalized: string) => {
     if (!onSubmit || isSubmitting || disabled) {
       return;
     }
@@ -124,9 +130,9 @@ export function ItemIdInput({
         focusInput();
       }
     }
-  }
+  }, [clearOnSubmit, disabled, focusInput, isSubmitting, keepFocus, onSubmit, onValueChange, scheduleValidationReset]);
 
-  function submitCurrentValue() {
+  const submitCurrentValue = useCallback(() => {
     const normalized = value.trim().toUpperCase();
     if (!normalized) {
       return;
@@ -136,6 +142,7 @@ export function ItemIdInput({
       if (shouldClearOnInvalidPrefix) {
         onValueChange("");
       }
+      onInvalidValue?.(normalized);
       setValidationState("invalid");
       scheduleValidationReset();
       return;
@@ -143,7 +150,7 @@ export function ItemIdInput({
 
     setValidationState("valid");
     void submit(normalized);
-  }
+  }, [onInvalidValue, onValueChange, scheduleValidationReset, shouldClearOnInvalidPrefix, submit, value]);
 
   useEffect(() => {
     if (submitTrigger === undefined || submitTrigger === lastSubmitTriggerRef.current) {
@@ -152,7 +159,7 @@ export function ItemIdInput({
 
     lastSubmitTriggerRef.current = submitTrigger;
     submitCurrentValue();
-  }, [submitTrigger, value]);
+  }, [submitCurrentValue, submitTrigger]);
 
   function handleChange(rawValue: string) {
     const normalized = rawValue.toUpperCase();
@@ -165,6 +172,7 @@ export function ItemIdInput({
       } else {
         onValueChange(normalized);
       }
+      onInvalidValue?.(trimmed);
       setValidationState("invalid");
       scheduleValidationReset(flavor === "search" ? 350 : 450);
       return;
@@ -180,7 +188,7 @@ export function ItemIdInput({
     const isValid = itemIdSchema.safeParse(trimmed).success;
     if (isValid) {
       setValidationState("valid");
-      if (autoSubmitOnValid) {
+      if (autoSubmitOnValid && trimmed.length >= autoSubmitMinLength) {
         void submit(trimmed);
       }
       return;
@@ -217,7 +225,7 @@ export function ItemIdInput({
         }}
         placeholder={placeholder}
         autoComplete="off"
-        disabled={disabled || isSubmitting}
+        disabled={disabled || (disableWhileSubmitting && isSubmitting)}
         className={`${className} rounded border px-2 py-1 font-mono text-sm outline-none transition-colors duration-150 ${getInputClass(validationState)}`}
         aria-label={ariaLabel ?? label}
       />
