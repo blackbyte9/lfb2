@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SortHeaderButton } from "@/components/ui/sort-header-button";
 import { ItemIdInput } from "@/components/ui/item-id-input";
 import { itemCreateSchema } from "@/lib/book-schemas";
-import { useFileUpload } from "@/lib/useFileUpload";
 
 type ItemStatus = "NEW" | "USED" | "DAMAGED" | "REMOVED";
 
@@ -27,11 +26,6 @@ export type BookOption = {
   id: number;
   isbn: string;
   name: string;
-};
-
-type ImportIssue = {
-  line: number;
-  reason: string;
 };
 
 type ItemHistoryLease = {
@@ -75,12 +69,11 @@ const ITEM_STATUSES: ItemStatus[] = ["NEW", "USED", "DAMAGED", "REMOVED"];
 export function BookItemsManager({ book, books, initialItems, canManage, highlightItemId = null }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<ItemRow[]>(initialItems);
-  const [sortBy, setSortBy] = useState<"id" | "status" | "leased">("id");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState<"id" | "status" | "leased">("leased");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
   const [itemsError, setItemsError] = useState<string | null>(null);
   const [itemsInfo, setItemsInfo] = useState<string | null>(null);
-  const [importIssues, setImportIssues] = useState<ImportIssue[]>([]);
   const [newItemId, setNewItemId] = useState("");
   const [newItemStatus, setNewItemStatus] = useState<ItemStatus>("NEW");
   const [searchItemId, setSearchItemId] = useState("");
@@ -93,28 +86,6 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
   const [historyItemId, setHistoryItemId] = useState<string | null>(null);
   const [historyEvents, setHistoryEvents] = useState<ItemHistoryEvent[]>([]);
   const itemRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
-
-  const {
-    fileInputRef,
-    handleFileChange,
-    triggerFileInput,
-    status: importStatus,
-    error: importError,
-    clearStatus,
-    acceptedTypes,
-  } = useFileUpload({
-    endpoint: "/api/items/import",
-    onSuccess: async (data) => {
-      const payload = data as { issues?: ImportIssue[] };
-      setImportIssues(payload.issues ?? []);
-      await loadItems();
-    },
-    onError: (errorMessage) => {
-      setImportIssues([]);
-      setItemsError(errorMessage);
-    },
-    acceptedTypes: ".json",
-  });
 
   const sortedBooks = useMemo(() => [...books].sort((a, b) => a.name.localeCompare(b.name, "de")), [books]);
   const sortedItems = useMemo(() => {
@@ -155,7 +126,6 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
   async function handleCreateItem() {
     setItemsError(null);
     setItemsInfo(null);
-    setImportIssues([]);
 
     const parsed = itemCreateSchema.safeParse({
       id: newItemId,
@@ -189,7 +159,6 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
   async function handleDeleteItem(itemId: string) {
     setItemsError(null);
     setItemsInfo(null);
-    setImportIssues([]);
 
     const res = await fetch(`/api/items/${itemId}`, { method: "DELETE" });
     if (!res.ok) {
@@ -205,7 +174,6 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
   async function handleReturnItem(itemId: string) {
     setItemsError(null);
     setItemsInfo(null);
-    setImportIssues([]);
     setUpdatingItemId(itemId);
 
     const res = await fetch(`/api/items/${itemId}/return`, { method: "POST" });
@@ -228,7 +196,6 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
   async function handleUpdateItemStatus(itemId: string, status: ItemStatus) {
     setItemsError(null);
     setItemsInfo(null);
-    setImportIssues([]);
     setUpdatingItemId(itemId);
 
     const res = await fetch(`/api/items/${itemId}`, {
@@ -259,7 +226,6 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
 
     setItemsError(null);
     setItemsInfo(null);
-    setImportIssues([]);
 
     const res = await fetch(`/api/items/${trimmedItemId}`);
     if (!res.ok) {
@@ -428,48 +394,11 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
           <Button size="sm" onClick={() => void handleCreateItem()} disabled={!newItemId.trim()}>
             Item anlegen
           </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={acceptedTypes}
-            className="hidden"
-            onChange={handleFileChange}
-            aria-label="JSON-Datei zum Importieren von Items für alle Bücher"
-            title="JSON-Datei mit Items für alle passenden Bücher auswählen"
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              clearStatus();
-              setItemsError(null);
-              setItemsInfo(null);
-              setImportIssues([]);
-              triggerFileInput();
-            }}
-            title="Öffnet eine JSON-Datei und importiert Einträge für alle passenden Bücher"
-          >
-            JSON-Datei für alle Bücher importieren
-          </Button>
         </div>
       )}
 
-      {importStatus && <p className="text-sm text-green-700">{importStatus}</p>}
-      {importError && <p className="text-sm text-red-600">{importError}</p>}
       {itemsInfo && <p className="text-sm text-green-700">{itemsInfo}</p>}
       {itemsError && <p className="text-sm text-red-600">{itemsError}</p>}
-      {importIssues.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          <p className="font-medium">Übersprungene Zeilen</p>
-          <ul className="mt-2 list-disc pl-5">
-            {importIssues.map((issue) => (
-              <li key={`${issue.line}-${issue.reason}`}>
-                Zeile {issue.line}: {issue.reason}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <div className="rounded-lg border border-black/10">
         <Table>

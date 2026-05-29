@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SortHeaderButton } from "@/components/ui/sort-header-button";
 import { ItemIdInput } from "@/components/ui/item-id-input";
 import { bookCreateSchema } from "@/lib/book-schemas";
-import { useFileUpload } from "@/lib/useFileUpload";
 
 export type BookRow = {
   id: number;
@@ -44,21 +43,6 @@ export function BooksManager({ initialBooks, canManage }: Props) {
   const [pageSize, setPageSize] = useState(20);
   const [sortBy, setSortBy] = useState<"isbn" | "name" | "itemCount" | "leasedCount" | "availableCount">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-
-  const { fileInputRef, handleFileChange, triggerFileInput, status, error: uploadError, clearStatus, acceptedTypes } =
-    useFileUpload({
-      endpoint: "/api/books/import",
-      onSuccess: async () => {
-        const booksRes = await fetch("/api/books");
-        if (booksRes.ok) {
-          const refreshed = (await booksRes.json()) as BookRow[];
-          setBooks(refreshed);
-          setPageIndex(0);
-        }
-      },
-      onError: (err) => setError(err),
-      acceptedTypes: ".json",
-    });
 
   const pageCount = Math.max(1, Math.ceil(books.length / pageSize));
   const sortedBooks = useMemo(() => {
@@ -208,38 +192,16 @@ export function BooksManager({ initialBooks, canManage }: Props) {
             onClick={() => {
               setIsAdding(true);
               setError(null);
-              clearStatus();
             }}
           >
             + Buch hinzufügen
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              clearStatus();
-              setError(null);
-              triggerFileInput();
-            }}
-          >
-            Aus Datei importieren
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={acceptedTypes}
-            className="hidden"
-            onChange={handleFileChange}
-            aria-label="JSON-Datei zum Importieren von Büchern"
-            title="JSON-Datei mit Büchereinträgen hochladen"
-          />
         </div>
       )}
 
       <p className="text-sm text-[#364152]">Zeile anklicken, um zur Item-Liste dieses Buchs zu wechseln.</p>
 
-      {status && <p className="text-sm text-green-700">{status}</p>}
-      {(error || uploadError) && <p className="text-sm text-red-600">{error || uploadError}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       {canManage && isAdding && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-black/10 bg-[#f2f4f8] p-3">

@@ -23,7 +23,7 @@ export async function readUploadedFileText(request: NextRequest, fieldName = "fi
 
 export async function runManagedImport<TResult>(request: NextRequest, options: RunImportOptions<TResult>): Promise<NextResponse> {
   const session = await auth.api.getSession({ headers: request.headers });
-  const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
+  const canManage = session?.user.role === "ADMIN";
   if (!canManage) {
     return NextResponse.json(
       { error: options.unauthorizedMessage ?? "Nicht autorisiert" },

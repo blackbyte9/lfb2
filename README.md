@@ -25,6 +25,7 @@ It includes role-based access control, import workflows for multiple formats, da
   - Students page access
   - Students APIs (list/detail operations used by UI)
   - Students navigation link visibility
+- All import workflows are restricted to `ADMIN` and available in Verwaltung -> Importe.
 - Guests can still access books list in read-only mode.
 
 ### Books
@@ -34,7 +35,6 @@ It includes role-based access control, import workflows for multiple formats, da
 - **Ausgeliehen** counter: active items with an active lease
 - All three item-count columns are sortable
 - Add, edit, delete books (USER/ADMIN)
-- Import books from JSON file picker
 - Item count per book excludes removed items
 - Item-ID search/jump from books list to the corresponding book detail
 
@@ -49,14 +49,14 @@ It includes role-based access control, import workflows for multiple formats, da
 - **Verfügbarkeit** column shows `Verfügbar` (green) or the name of the lending student (amber, clickable)
 - Clicking a leased item's student name navigates to that student's leases detail page
 - **Zurückgeben** button on leased items (USER/ADMIN): marks the active lease as returned immediately
-- Import items from uploaded JSON
 - Tolerant import parsing with skipped-line issue reporting
 
 ### Students
 
 - Students table with sorting (`Vorname`, `Nachname`, `Kurs`, `Ausgeliehen`)
 - **Ausgeliehen** column shows count of active leases per student (amber when > 0), sortable
-- Clicking a student row navigates to their leases detail page (`/students/[id]/leases`)
+- Clicking a student row opens the lease workflow with the student preselected (`/lease?studentId=...`)
+- Student leases detail page remains available at `/students/[id]/leases`
 - Leases detail page shows all active leases with book title, ISBN, item ID, and leased date
 - Book title links back to the corresponding book detail page
 - Search field for students (name, old ID, course, status)
@@ -64,23 +64,24 @@ It includes role-based access control, import workflows for multiple formats, da
 - Status management: `ACTIVE`, `INACTIVE`, `SPECIAL`
 - Grade history modal per student
 - Role-protected students access (USER/ADMIN)
-- Lease import (JSON) to link students and items
 
 ### Leases Workflow
 
 - Main navigation includes a dedicated **Ausleihe** workflow entry (USER/ADMIN)
 - Workflow starts with student selection via modal (search by name, old ID, class)
+- Student row click in the students table is a shortcut into this workflow with preselection
 - Item scanner/input is enabled only after a student is selected
 - Scanning or entering a valid item ID creates a lease immediately for the selected student
 - Active leases list for the selected student is shown directly below, including links back to the corresponding book item
 
 ### Student Imports & Data Quality
 
-- JSON import via file picker
-- WiB CSV import via file picker
-- Leases JSON import via file picker (`leased`, `returned`, `active`, `itemId`, `studentId`)
-- Import setup modal asks for school year before opening file picker
-- School year is import metadata (timeline alignment), not a table filter
+- All import workflows are centralized in **Verwaltung -> Importe** (admin second layer)
+- JSON import via file picker (Books, Items, Students, Leases)
+- WiB CSV import via file picker (Students)
+- Name conversion workflow (encoding preview/apply with per-row edits) is in **Verwaltung -> Importe**
+- School year input is provided in the admin import tab and applied to student imports
+- School year remains import metadata (timeline alignment), not a table filter
 - Grade timeline tracking in `StudentGradeHistory` (per student/year/source)
 - Name encoding repair workflow:
   - Preview proposed fixes

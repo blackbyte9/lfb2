@@ -173,7 +173,7 @@ async function cleanupFixture(fixture: FixtureData | null) {
   }
 }
 
-test("students row click opens leases page", async ({ page }) => {
+test("students row click opens lease workflow", async ({ page }) => {
   let fixture: FixtureData | null = null;
   try {
     fixture = await makeUserAndFixture(page);
@@ -184,7 +184,8 @@ test("students row click opens leases page", async ({ page }) => {
     await expect(idCell).toBeVisible({ timeout: 10_000 });
     await idCell.click();
 
-    await expect(page).toHaveURL(new RegExp(`/students/${fixture.studentId}/leases$`));
+    await expect(page).toHaveURL(new RegExp(`/lease\\?studentId=${fixture.studentId}$`));
+    await expect(page.getByRole("heading", { name: "Ausleihe" })).toBeVisible();
     await expect(page.getByText(fixture.bookName)).toBeVisible();
     await expect(page.getByText(fixture.itemId)).toBeVisible();
   } finally {
