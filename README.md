@@ -66,6 +66,14 @@ It includes role-based access control, import workflows for multiple formats, da
 - Role-protected students access (USER/ADMIN)
 - Lease import (JSON) to link students and items
 
+### Leases Workflow
+
+- Main navigation includes a dedicated **Ausleihe** workflow entry (USER/ADMIN)
+- Workflow starts with student selection via modal (search by name, old ID, class)
+- Item scanner/input is enabled only after a student is selected
+- Scanning or entering a valid item ID creates a lease immediately for the selected student
+- Active leases list for the selected student is shown directly below, including links back to the corresponding book item
+
 ### Student Imports & Data Quality
 
 - JSON import via file picker

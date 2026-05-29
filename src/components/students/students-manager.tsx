@@ -729,7 +729,7 @@ export function StudentsManager({ initialStudents, canManage }: Props) {
         data={filteredStudents}
         emptyMessage="Keine Schüler gefunden."
         enableSorting
-        onRowClick={(student) => router.push(`/students/${student.id}/leases`)}
+        onRowClick={(student) => router.push(`/lease?studentId=${student.id}`)}
       />
 
       {historyOpen && (

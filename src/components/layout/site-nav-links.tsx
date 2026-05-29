@@ -28,6 +28,16 @@ export function SiteNavLinks({ canAccessStudents, isAdmin }: Props) {
       </Link>
       {canAccessStudents ? (
         <Link
+          href="/lease"
+          className={`rounded-md px-3 py-1 font-bold ${
+            isActive(pathname, "/lease") ? "bg-white text-[#0f172a]" : "bg-cyan-300 text-[#111827] hover:bg-cyan-200"
+          }`}
+        >
+          Ausleihe
+        </Link>
+      ) : null}
+      {canAccessStudents ? (
+        <Link
           href="/return"
           className={`rounded-md px-3 py-1 font-bold ${
             isActive(pathname, "/return") ? "bg-white text-[#0f172a]" : "bg-amber-300 text-[#111827] hover:bg-amber-200"
