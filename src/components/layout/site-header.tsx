@@ -3,32 +3,18 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { canAccessStudents } from "@/lib/students-access";
 import { logoutAction } from "@/app/auth/actions";
+import { SiteNavLinks } from "@/components/layout/site-nav-links";
 
 export async function SiteHeader() {
   const session = await auth.api.getSession({ headers: await headers() });
+  const studentAccess = canAccessStudents(session?.user.role);
+  const isAdmin = session?.user.role === "ADMIN";
 
   return (
     <header className="h-14 bg-[#006b2d] text-white">
       <div className="mx-auto flex h-full w-full max-w-5xl items-center px-4">
         <nav aria-label="Hauptnavigation" className="flex w-full items-center justify-between text-sm font-semibold">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="px-2 py-1 transition-opacity hover:opacity-90">
-              LFB2
-            </Link>
-            <Link href="/books" className="px-2 py-1 transition-opacity hover:opacity-90">
-              Bücher
-            </Link>
-            {canAccessStudents(session?.user.role) ? (
-              <Link href="/students" className="px-2 py-1 transition-opacity hover:opacity-90">
-                Schüler
-              </Link>
-            ) : null}
-            {session?.user.role === "ADMIN" ? (
-              <Link href="/admin" className="px-2 py-1 transition-opacity hover:opacity-90">
-                Verwaltung
-              </Link>
-            ) : null}
-          </div>
+          <SiteNavLinks canAccessStudents={studentAccess} isAdmin={isAdmin} />
 
           <div className="flex items-center gap-4">
             {session ? (

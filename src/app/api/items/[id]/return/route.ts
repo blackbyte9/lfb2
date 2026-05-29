@@ -14,7 +14,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const lease = await prisma.lease.findFirst({
     where: { itemId: id, active: true },
-    select: { id: true },
+    select: {
+      id: true,
+      studentId: true,
+      item: {
+        select: {
+          id: true,
+          book: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      student: {
+        select: {
+          id: true,
+          idOld: true,
+          firstname: true,
+          lastname: true,
+          course: true,
+        },
+      },
+    },
   });
 
   if (!lease) {
@@ -26,5 +49,33 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     data: { active: false, returnedAt: new Date() },
   });
 
-  return NextResponse.json({ ok: true });
+  const remainingLeases = await prisma.lease.findMany({
+    where: { studentId: lease.studentId, active: true },
+    orderBy: { leasedAt: "desc" },
+    select: {
+      id: true,
+      leasedAt: true,
+      item: {
+        select: {
+          id: true,
+          book: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return NextResponse.json({
+    ok: true,
+    returnedItem: {
+      id: lease.item.id,
+      book: lease.item.book,
+    },
+    student: lease.student,
+    remainingLeases,
+  });
 }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { EditableTableRow } from "@/components/ui/editable-table-row";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SortHeaderButton } from "@/components/ui/sort-header-button";
+import { ItemIdInput } from "@/components/ui/item-id-input";
 import { bookCreateSchema } from "@/lib/book-schemas";
 import { useFileUpload } from "@/lib/useFileUpload";
 
@@ -30,6 +31,7 @@ export function BooksManager({ initialBooks, canManage }: Props) {
   const router = useRouter();
   const [books, setBooks] = useState<BookRow[]>(initialBooks);
   const [searchItemId, setSearchItemId] = useState("");
+  const [searchSubmitTrigger, setSearchSubmitTrigger] = useState(0);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editIsbn, setEditIsbn] = useState("");
   const [editName, setEditName] = useState("");
@@ -183,27 +185,18 @@ export function BooksManager({ initialBooks, canManage }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-2 rounded-lg border border-black/10 bg-[#f2f4f8] p-3">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="search-item-id" className="text-xs font-medium text-[#364152]">
-            Item-ID suchen
-          </label>
-          <input
-            id="search-item-id"
-            type="text"
-            placeholder="RSV0010000"
-            value={searchItemId}
-            onChange={(e) => setSearchItemId(e.target.value.toUpperCase())}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void handleSearchItem();
-              }
-            }}
-            className="w-48 rounded border border-black/20 bg-white px-2 py-1 text-sm outline-none focus:border-[#006b2d]"
-            aria-label="Item-ID suchen"
-          />
-        </div>
-        <Button size="sm" variant="outline" onClick={() => void handleSearchItem()}>
+        <ItemIdInput
+          id="search-item-id"
+          label="Item-ID suchen"
+          value={searchItemId}
+          onValueChange={(value) => setSearchItemId(value)}
+          onSubmit={() => handleSearchItem()}
+          submitTrigger={searchSubmitTrigger}
+          clearOnSubmit
+          flavor="search"
+          ariaLabel="Item-ID suchen"
+        />
+        <Button size="sm" variant="outline" onClick={() => setSearchSubmitTrigger((current) => current + 1)}>
           Zu Item springen
         </Button>
       </div>
