@@ -9,6 +9,8 @@ import { AdminImportsPanel } from "@/components/admin/admin-imports-panel";
 const ADMIN_ERRORS: Record<string, string> = {
   "invalid-role": "Die Rolle konnte nicht aktualisiert werden. Bitte wähle eine gültige Rolle.",
   "invalid-password": "Das Passwort muss mindestens 8 Zeichen lang sein.",
+  "invalid-user-delete": "Der Benutzer konnte nicht gelöscht werden.",
+  "cannot-delete-self": "Du kannst deinen eigenen Benutzer nicht löschen.",
 };
 
 export default async function AdminPage({

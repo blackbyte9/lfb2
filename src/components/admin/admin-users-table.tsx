@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { AdminPasswordResetForm } from "@/components/admin/admin-password-reset-form";
 import { AdminUserSummaryCell } from "@/components/admin/admin-user-summary-cell";
+import { deleteUserAction } from "@/app/admin/actions";
 import { RoleSelect } from "@/components/admin/role-select";
 import { DataTable } from "@/components/ui/data-table";
 
@@ -38,6 +39,29 @@ const columns: ColumnDef<AdminUserRow>[] = [
     cell: ({ row }) => {
       const user = row.original;
       return <AdminPasswordResetForm userId={user.id} />;
+    },
+  },
+  {
+    id: "delete",
+    header: "Löschen",
+    cell: ({ row }) => {
+      const user = row.original;
+      return (
+        <form
+          action={deleteUserAction}
+          onSubmit={(event) => {
+            const confirmed = window.confirm(`Benutzer ${user.name} wirklich löschen?`);
+            if (!confirmed) {
+              event.preventDefault();
+            }
+          }}
+        >
+          <input name="userId" type="hidden" value={user.id} />
+          <button type="submit" className="rounded-md border border-red-300 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">
+            Löschen
+          </button>
+        </form>
+      );
     },
   },
 ];

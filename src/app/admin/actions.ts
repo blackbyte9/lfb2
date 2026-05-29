@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 const USER_TYPES = ["GUEST", "USER", "ADMIN"] as const;
 
@@ -62,6 +63,30 @@ export async function updateUserPasswordAction(formData: FormData) {
     },
     headers: await headers(),
   });
+
+  revalidatePath("/admin");
+}
+
+export async function deleteUserAction(formData: FormData) {
+  const session = await requireAdmin();
+
+  const userId = readText(formData, "userId");
+
+  if (!userId) {
+    redirect("/admin?error=invalid-user-delete");
+  }
+
+  if (userId === session.user.id) {
+    redirect("/admin?error=cannot-delete-self");
+  }
+
+  try {
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+  } catch {
+    redirect("/admin?error=invalid-user-delete");
+  }
 
   revalidatePath("/admin");
 }
