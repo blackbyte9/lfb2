@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: request.headers });
-  const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
-  if (!canManage) {
+  const canAccess = session?.user.role === "USER" || session?.user.role === "ADMIN";
+  if (!canAccess) {
     return NextResponse.json({ error: "Nicht autorisiert" }, { status: 403 });
   }
 

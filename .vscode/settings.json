@@ -2,7 +2,22 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "prettier.requireConfig": true,
-  "cSpell.words": ["cuid", "datasource", "postgresql"],
+  "cSpell.words": [
+    "Ausleihliste",
+    "cuid",
+    "datasource",
+    "firstname",
+    "Jahrgangsdaten",
+    "Jahrgangshistorie",
+    "Kodierungsfehler",
+    "Metadatum",
+    "Namenkodierung",
+    "Parserlogik",
+    "postgresql",
+    "rollenbasierte",
+    "Verfügbarkeitsinformationen",
+    "Verlaufsdaten"
+  ],
   "cSpell.ignorePaths": [
     "**/*config.{js,cjs,mjs,ts,json,yml,yaml}",
     "**/tsconfig*.json",

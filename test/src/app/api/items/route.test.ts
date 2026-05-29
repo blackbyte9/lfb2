@@ -1,19 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { ensureTestEnv, readJson } from "@/test/helpers";
+import { ensureTestEnv, readJson } from "../../../../helpers";
 
 ensureTestEnv();
 
 test("GET /api/items returns 400 for invalid bookId", async () => {
-  const { GET } = await import("./route");
+  const { GET } = await import("@/app/api/items/route");
 
   const response = await GET(new Request("http://localhost/api/items?bookId=abc") as never);
   assert.equal(response.status, 400);
 });
 
 test("GET /api/items maps lease and student fields", async () => {
-  const { GET } = await import("./route");
+  const { GET } = await import("@/app/api/items/route");
   const { prisma } = await import("@/lib/prisma");
 
   const originalFindMany = prisma.item.findMany;
@@ -41,7 +41,7 @@ test("GET /api/items maps lease and student fields", async () => {
 });
 
 test("POST /api/items rejects guest role", async () => {
-  const { POST } = await import("./route");
+  const { POST } = await import("@/app/api/items/route");
   const { auth } = await import("@/lib/auth");
 
   const originalGetSession = auth.api.getSession;

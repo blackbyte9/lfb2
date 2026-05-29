@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { ensureTestEnv, readJson } from "@/test/helpers";
+import { ensureTestEnv, readJson } from "../../../../helpers";
 
 ensureTestEnv();
 
 test("GET /api/books maps itemCount and leasedCount", async () => {
-  const { GET } = await import("./route");
+  const { GET } = await import("@/app/api/books/route");
   const { prisma } = await import("@/lib/prisma");
 
   const originalFindMany = prisma.book.findMany;
@@ -35,7 +35,7 @@ test("GET /api/books maps itemCount and leasedCount", async () => {
 });
 
 test("POST /api/books rejects guest role", async () => {
-  const { POST } = await import("./route");
+  const { POST } = await import("@/app/api/books/route");
   const { auth } = await import("@/lib/auth");
 
   const originalGetSession = auth.api.getSession;
@@ -56,7 +56,7 @@ test("POST /api/books rejects guest role", async () => {
 });
 
 test("POST /api/books returns 409 on unique conflicts", async () => {
-  const { POST } = await import("./route");
+  const { POST } = await import("@/app/api/books/route");
   const { auth } = await import("@/lib/auth");
   const { prisma } = await import("@/lib/prisma");
 

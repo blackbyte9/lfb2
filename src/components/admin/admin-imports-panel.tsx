@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { deleteAllAppDataAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { useFileUpload } from "@/lib/useFileUpload";
 
@@ -311,7 +312,14 @@ export function AdminImportsPanel() {
         <div className="rounded-lg border border-black/10 p-3">
           <p className="text-sm font-semibold text-[#131820]">Bücher JSON</p>
           <p className="mt-1 text-xs text-[#4b5563]">Importiert Bücher über ISBN.</p>
-          <input ref={booksInputRef} type="file" accept={booksAcceptedTypes} className="hidden" onChange={handleBooksFile} />
+          <input
+            ref={booksInputRef}
+            type="file"
+            accept={booksAcceptedTypes}
+            className="hidden"
+            onChange={handleBooksFile}
+            title="Bücher-Importdatei auswählen"
+          />
           <Button
             size="sm"
             className="mt-3"
@@ -328,7 +336,14 @@ export function AdminImportsPanel() {
         <div className="rounded-lg border border-black/10 p-3">
           <p className="text-sm font-semibold text-[#131820]">Items JSON</p>
           <p className="mt-1 text-xs text-[#4b5563]">Ordnet Items per ISBN einem Buch zu.</p>
-          <input ref={itemsInputRef} type="file" accept={itemsAcceptedTypes} className="hidden" onChange={handleItemsFile} />
+          <input
+            ref={itemsInputRef}
+            type="file"
+            accept={itemsAcceptedTypes}
+            className="hidden"
+            onChange={handleItemsFile}
+            title="Items-Importdatei auswählen"
+          />
           <Button
             size="sm"
             className="mt-3"
@@ -345,7 +360,14 @@ export function AdminImportsPanel() {
         <div className="rounded-lg border border-black/10 p-3">
           <p className="text-sm font-semibold text-[#131820]">Schüler JSON</p>
           <p className="mt-1 text-xs text-[#4b5563]">Format: idOld, firstname, lastname, course.</p>
-          <input ref={studentsInputRef} type="file" accept={studentsAcceptedTypes} className="hidden" onChange={handleStudentsFile} />
+          <input
+            ref={studentsInputRef}
+            type="file"
+            accept={studentsAcceptedTypes}
+            className="hidden"
+            onChange={handleStudentsFile}
+            title="Schüler-Importdatei auswählen"
+          />
           <Button
             size="sm"
             className="mt-3"
@@ -368,6 +390,7 @@ export function AdminImportsPanel() {
             accept={studentsWibAcceptedTypes}
             className="hidden"
             onChange={handleStudentsWibFile}
+            title="Schüler-WiB-CSV-Datei auswählen"
           />
           <Button
             size="sm"
@@ -385,7 +408,14 @@ export function AdminImportsPanel() {
         <div className="rounded-lg border border-black/10 p-3">
           <p className="text-sm font-semibold text-[#131820]">Ausleihen JSON</p>
           <p className="mt-1 text-xs text-[#4b5563]">Felder: leased, returned, active, itemId, studentId.</p>
-          <input ref={leasesInputRef} type="file" accept={leasesAcceptedTypes} className="hidden" onChange={handleLeasesFile} />
+          <input
+            ref={leasesInputRef}
+            type="file"
+            accept={leasesAcceptedTypes}
+            className="hidden"
+            onChange={handleLeasesFile}
+            title="Ausleihen-Importdatei auswählen"
+          />
           <Button
             size="sm"
             className="mt-3"
@@ -497,6 +527,33 @@ export function AdminImportsPanel() {
             </ul>
           </div>
         ) : null}
+      </div>
+
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-red-800">Gefahrenbereich</p>
+            <p className="mt-1 text-xs text-red-700">
+              Löscht alle Anwendungsdaten wie Bücher, Items, Schüler, Ausleihen und Verlaufsdaten. Benutzerkonten bleiben erhalten.
+            </p>
+          </div>
+
+          <form
+            action={deleteAllAppDataAction}
+            onSubmit={(event) => {
+              const confirmed = window.confirm(
+                "Alle Anwendungsdaten wirklich löschen? Benutzerkonten bleiben erhalten, aber Bücher, Items, Schüler und Ausleihen werden entfernt.",
+              );
+              if (!confirmed) {
+                event.preventDefault();
+              }
+            }}
+          >
+            <Button size="sm" type="submit" className="bg-red-700 text-white hover:bg-red-800">
+              Alle Daten löschen
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );

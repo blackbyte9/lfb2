@@ -18,6 +18,8 @@ type FixtureData = {
   leaseId: number;
 };
 
+type UserRole = "USER" | "ADMIN";
+
 function loadDotenvFile(filePath: string) {
   if (!existsSync(filePath)) {
     return;
@@ -80,7 +82,12 @@ async function login(page: Page, fixture: FixtureData) {
   await page.waitForURL("**/");
 }
 
-async function makeUserAndFixture(page: Page): Promise<FixtureData> {
+async function logout(page: Page) {
+  await page.context().clearCookies();
+  await page.goto("/");
+}
+
+async function makeUserAndFixture(page: Page, role: UserRole = "USER"): Promise<FixtureData> {
   const suffix = randomSuffix();
   const usernameToken = `e2e${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   const fixture: FixtureData = {
@@ -111,7 +118,7 @@ async function makeUserAndFixture(page: Page): Promise<FixtureData> {
   }
 
   fixture.userId = createdUser.id;
-  await pool.query('update "User" set role = $1 where id = $2', ["USER", fixture.userId]);
+  await pool.query('update "User" set role = $1 where id = $2', [role, fixture.userId]);
 
   const studentResult = await pool.query<{ id: number; firstname: string; lastname: string }>(
     'insert into "Student" ("idOld", firstname, lastname, course, status, "createdAt", "updatedAt") values ($1, $2, $3, $4, $5, $6, $7) returning id, firstname, lastname',
@@ -150,8 +157,7 @@ async function makeUserAndFixture(page: Page): Promise<FixtureData> {
   }
   fixture.leaseId = lease.id;
 
-  await page.goto("/");
-  await page.getByRole("button", { name: "Abmelden" }).click();
+  await logout(page);
   await login(page, fixture);
 
   return fixture;
@@ -188,6 +194,90 @@ test("students row click opens lease workflow", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Ausleihe" })).toBeVisible();
     await expect(page.getByText(fixture.bookName)).toBeVisible();
     await expect(page.getByText(fixture.itemId)).toBeVisible();
+  } finally {
+    await cleanupFixture(fixture);
+  }
+});
+
+test("books and items are publicly readable with availability information", async ({ page }) => {
+  let fixture: FixtureData | null = null;
+  try {
+    fixture = await makeUserAndFixture(page);
+    await logout(page);
+
+    await page.goto("/books");
+    await expect(page.getByRole("heading", { name: "Bücher" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "+ Buch hinzufügen" })).toHaveCount(0);
+
+    const booksResponse = await page.request.get("/api/books");
+    expect(booksResponse.ok()).toBeTruthy();
+    const booksData = (await booksResponse.json()) as Array<{ id: number; name: string; itemCount: number; leasedCount: number }>;
+    const listedBook = booksData.find((book) => book.id === fixture.bookId);
+    expect(listedBook?.name).toBe(fixture.bookName);
+    expect(listedBook?.itemCount).toBe(1);
+
+    await page.goto(`/books/${fixture.bookId}`);
+    await expect(page.getByRole("heading", { name: "Buch-Items" })).toBeVisible();
+    await expect(page.getByRole("button", { name: fixture.studentLabel })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Item anlegen" })).toHaveCount(0);
+  } finally {
+    await cleanupFixture(fixture);
+  }
+});
+
+test("guest cannot access student or admin areas", async ({ page }) => {
+  let fixture: FixtureData | null = null;
+  try {
+    fixture = await makeUserAndFixture(page);
+    await logout(page);
+
+    await page.goto("/students");
+    await expect(page).toHaveURL(/\/login$/);
+
+    await page.goto("/lease");
+    await expect(page).toHaveURL(/\/login$/);
+
+    await page.goto("/return");
+    await expect(page).toHaveURL(/\/login$/);
+
+    await page.goto("/admin");
+    await expect(page).toHaveURL(/\/login$/);
+  } finally {
+    await cleanupFixture(fixture);
+  }
+});
+
+test("admin can access student workflows", async ({ page }) => {
+  let fixture: FixtureData | null = null;
+  try {
+    fixture = await makeUserAndFixture(page, "ADMIN");
+
+    await page.goto("/students");
+    await expect(page.getByRole("heading", { name: "Schüler" })).toBeVisible();
+
+    await page.goto("/lease");
+    await expect(page.getByRole("heading", { name: "Ausleihe" })).toBeVisible();
+
+    await page.goto("/return");
+    await expect(page.getByRole("heading", { name: "Rückgabe" })).toBeVisible();
+  } finally {
+    await cleanupFixture(fixture);
+  }
+});
+
+test("admin can see danger zone and user management", async ({ page }) => {
+  let fixture: FixtureData | null = null;
+  try {
+    fixture = await makeUserAndFixture(page, "ADMIN");
+
+    await page.goto("/admin?tab=imports");
+    await expect(page.getByRole("heading", { name: "Verwaltung" })).toBeVisible();
+    await expect(page.getByText("Gefahrenbereich")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Alle Daten löschen" })).toBeVisible();
+
+    await page.goto("/admin?tab=users");
+    await expect(page.getByRole("link", { name: "Benutzer" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Löschen" }).first()).toBeVisible();
   } finally {
     await cleanupFixture(fixture);
   }

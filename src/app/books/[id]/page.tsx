@@ -55,6 +55,7 @@ export default async function BookItemsPage({ params, searchParams }: Props) {
 
   const isAdmin = session?.user.role === "ADMIN";
   const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
+  const canReturn = session?.user.role === "ADMIN" || session?.user.role === "USER";
 
   const booksForClient: BookOption[] = books;
   const itemsForClient: ItemRow[] = items.map((item) => ({
@@ -87,6 +88,7 @@ export default async function BookItemsPage({ params, searchParams }: Props) {
           books={booksForClient}
           initialItems={itemsForClient}
           canManage={canManage}
+          canReturn={canReturn}
           highlightItemId={itemId ?? null}
         />
       </div>

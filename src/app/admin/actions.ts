@@ -90,3 +90,22 @@ export async function deleteUserAction(formData: FormData) {
 
   revalidatePath("/admin");
 }
+
+export async function deleteAllAppDataAction() {
+  await requireAdmin();
+
+  await prisma.$transaction([
+    prisma.lease.deleteMany(),
+    prisma.item.deleteMany(),
+    prisma.studentGradeHistory.deleteMany(),
+    prisma.student.deleteMany(),
+    prisma.book.deleteMany(),
+    prisma.test.deleteMany(),
+  ]);
+
+  revalidatePath("/books");
+  revalidatePath("/students");
+  revalidatePath("/lease");
+  revalidatePath("/return");
+  revalidatePath("/admin");
+}

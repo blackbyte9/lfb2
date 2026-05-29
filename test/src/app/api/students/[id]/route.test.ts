@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { ensureTestEnv } from "@/test/helpers";
+import { ensureTestEnv } from "../../../../../helpers";
 
 ensureTestEnv();
 
 test("PATCH /api/students/[id] rejects guest role", async () => {
-  const { PATCH } = await import("./route");
+  const { PATCH } = await import("@/app/api/students/[id]/route");
   const { auth } = await import("@/lib/auth");
 
   const originalGetSession = auth.api.getSession;
@@ -26,7 +26,7 @@ test("PATCH /api/students/[id] rejects guest role", async () => {
 });
 
 test("PATCH /api/students/[id] validates id and payload", async () => {
-  const { PATCH } = await import("./route");
+  const { PATCH } = await import("@/app/api/students/[id]/route");
   const { auth } = await import("@/lib/auth");
 
   const originalGetSession = auth.api.getSession;
@@ -62,14 +62,14 @@ test("PATCH /api/students/[id] validates id and payload", async () => {
 });
 
 test("PATCH /api/students/[id] maps unique-constraint error to 409", async () => {
-  const { PATCH } = await import("./route");
+  const { PATCH } = await import("@/app/api/students/[id]/route");
   const { auth } = await import("@/lib/auth");
   const { prisma } = await import("@/lib/prisma");
 
   const originalGetSession = auth.api.getSession;
   const originalUpdate = prisma.student.update;
 
-  auth.api.getSession = (async () => ({ user: { role: "ADMIN" } })) as typeof auth.api.getSession;
+  auth.api.getSession = (async () => ({ user: { role: "USER" } })) as typeof auth.api.getSession;
   prisma.student.update = (async () => {
     throw new Error("Unique constraint failed");
   }) as typeof prisma.student.update;
@@ -83,6 +83,39 @@ test("PATCH /api/students/[id] maps unique-constraint error to 409", async () =>
 
     const response = await PATCH(request as never, { params: Promise.resolve({ id: "1" }) });
     assert.equal(response.status, 409);
+  } finally {
+    auth.api.getSession = originalGetSession;
+    prisma.student.update = originalUpdate;
+  }
+});
+
+test("PATCH /api/students/[id] accepts admin role", async () => {
+  const { PATCH } = await import("@/app/api/students/[id]/route");
+  const { auth } = await import("@/lib/auth");
+  const { prisma } = await import("@/lib/prisma");
+
+  const originalGetSession = auth.api.getSession;
+  const originalUpdate = prisma.student.update;
+  auth.api.getSession = (async () => ({ user: { role: "ADMIN" } })) as typeof auth.api.getSession;
+  prisma.student.update = (async () => ({
+    id: 1,
+    idOld: "1001",
+    firstname: "Anna",
+    lastname: "Meyer",
+    course: "10A",
+    status: "ACTIVE",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  })) as typeof prisma.student.update;
+
+  try {
+    const request = new Request("http://localhost/api/students/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ firstname: "Anna" }),
+    });
+    const response = await PATCH(request as never, { params: Promise.resolve({ id: "1" }) });
+    assert.equal(response.status, 200);
   } finally {
     auth.api.getSession = originalGetSession;
     prisma.student.update = originalUpdate;

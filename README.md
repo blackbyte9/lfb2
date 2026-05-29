@@ -1,144 +1,134 @@
 # LFB2
 
-LFB2 is a school library management app for books, physical items, and students.
+LFB2 ist eine Schulbibliotheks-Anwendung für Bücher, physische Items und Schülerdaten.
 
-It includes role-based access control, import workflows for multiple formats, data quality tooling (name-fix preview/apply), and student timeline tracking by school year.
+Sie verbindet rollenbasierte Zugriffe, Leih- und Rückgabe-Workflows, zentrale Importfunktionen, Datenqualitäts-Tools und eine übersichtliche Historie pro Schüler und Schuljahr.
 
-## Tech Stack
+## Technologie
 
-- Next.js 16 (App Router)
-- React 19 + TypeScript
+- Next.js 16 mit App Router
+- React 19 und TypeScript
 - Tailwind CSS 4
-- shadcn/ui + custom UI components
+- shadcn/ui und eigene UI-Komponenten
 - Prisma ORM 7
 - Neon Postgres
-- ESLint + Prettier
-- Node test runner (`node --test`) with `tsx`
-- GitHub Actions CI
+- ESLint und Prettier
+- Node Test Runner mit `tsx`
+- Playwright für Browser-Tests
 
-## Requirements Summary (Current)
+## Aktuelle Implementierung
 
-### Security & Roles
+### Rollen und Zugriff
 
-- Roles: `GUEST`, `USER`, `ADMIN`
-- Students data is restricted to `USER`/`ADMIN` only:
-  - Students page access
-  - Students APIs (list/detail operations used by UI)
-  - Students navigation link visibility
-- All import workflows are restricted to `ADMIN` and available in Verwaltung -> Importe.
-- Guests can still access books list in read-only mode.
+- Rollen: `GUEST`, `USER`, `ADMIN`
+- Gäste und anonyme Nutzer dürfen Bücher und Items nur lesend nutzen, inklusive Verfügbarkeitsinformationen.
+- Schülerfunktionen sind für `USER` und `ADMIN` verfügbar.
+- Die Verwaltungsseite ist ausschließlich für `ADMIN` sichtbar.
+- Benutzerverwaltung und Gefahrenbereich sind nur in der Verwaltung verfügbar.
+- Importe und Namenskorrekturen liegen zentral unter **Verwaltung -> Importe**.
 
-### Books
+### Bücher
 
-- List books with pagination and sorting (`ISBN`, `Titel`, `Items`, `Verfügbar`, `Ausgeliehen`)
-- **Verfügbar** counter: active items without an active lease
-- **Ausgeliehen** counter: active items with an active lease
-- All three item-count columns are sortable
-- Add, edit, delete books (USER/ADMIN)
-- Item count per book excludes removed items
-- Item-ID search/jump from books list to the corresponding book detail
+- Bücherliste mit Pagination und Sortierung nach `ISBN`, `Titel`, `Verfügbar`, `Ausgeliehen`
+- `Verfügbar` zählt aktive Items ohne aktive Ausleihe
+- `Ausgeliehen` zählt aktive Items mit aktiver Ausleihe
+- Die Buchliste ist öffentlich lesbar
+- Buch anlegen, bearbeiten und löschen ist für `USER` und `ADMIN` möglich
+- Suche per Item-ID aus der Buchliste zur passenden Buchdetailseite
 
 ### Items
 
-- Manage items in book detail page
-- Create item by ID/barcode
-- Update item status (`NEW`, `USED`, `DAMAGED`, `REMOVED`)
-- Soft-delete items by setting status `REMOVED`
-- Item list/read/count logic excludes removed items
-- Sort items by ID, status, and availability
-- **Verfügbarkeit** column shows `Verfügbar` (green) or the name of the lending student (amber, clickable)
-- Clicking a leased item's student name navigates to that student's leases detail page
-- **Zurückgeben** button on leased items (USER/ADMIN): marks the active lease as returned immediately
-- Tolerant import parsing with skipped-line issue reporting
+- Item-Verwaltung auf der Buchdetailseite
+- Items per ID/Barcode anlegen
+- Statuswechsel für `NEW`, `USED`, `DAMAGED`, `REMOVED`
+- Entfernte Items werden in den Listen und Zählungen ignoriert
+- Sortierung nach ID, Status und Verfügbarkeit
+- Die Spalte `Verfügbarkeit` zeigt `Verfügbar` oder den Namen des ausleihenden Schülers
+- Klick auf den Namen eines ausgeliehenen Schülers führt zu dessen Ausleihen
+- Der Button `Zurückgeben` setzt die aktive Ausleihe sofort zurück
 
-### Students
+### Schüler
 
-- Students table with sorting (`Vorname`, `Nachname`, `Kurs`, `Ausgeliehen`)
-- **Ausgeliehen** column shows count of active leases per student (amber when > 0), sortable
-- Clicking a student row opens the lease workflow with the student preselected (`/lease?studentId=...`)
-- Student leases detail page remains available at `/students/[id]/leases`
-- Leases detail page shows all active leases with book title, ISBN, item ID, and leased date
-- Book title links back to the corresponding book detail page
-- Search field for students (name, old ID, course, status)
-- Student row edit action (ID, first name, last name, course, status)
-- Status management: `ACTIVE`, `INACTIVE`, `SPECIAL`
-- Grade history modal per student
-- Role-protected students access (USER/ADMIN)
+- Schülerliste mit Sortierung nach Vorname, Nachname, Kurs und Ausgeliehen
+- Die Spalte `Ausgeliehen` zeigt die Anzahl aktiver Ausleihen pro Schüler
+- Klick auf eine Schülerzeile öffnet den Ausleihe-Workflow mit Vorbelegung der Schüler-ID
+- Die Detailseite `/students/[id]/leases` zeigt alle aktiven Ausleihen des Schülers
+- In der Detailansicht werden Buchtitel, ISBN, Item-ID und Ausleihdatum angezeigt
+- Schülersuche nach Name, alter ID, Kurs oder Status
+- Bearbeiten von ID, Vorname, Nachname, Kurs und Status
+- Unterstützte Status: `ACTIVE`, `INACTIVE`, `SPECIAL`
+- Pro Schüler gibt es eine Historie der Jahrgangsdaten
 
-### Leases Workflow
+### Ausleihe und Rückgabe
 
-- Main navigation includes a dedicated **Ausleihe** workflow entry (USER/ADMIN)
-- Workflow starts with student selection via modal (search by name, old ID, class)
-- Student row click in the students table is a shortcut into this workflow with preselection
-- Item scanner/input is enabled only after a student is selected
-- Scanning or entering a valid item ID creates a lease immediately for the selected student
-- Active leases list for the selected student is shown directly below, including links back to the corresponding book item
+- Die Navigation enthält die Workflows **Ausleihe** und **Rückgabe**
+- Der Ausleihe-Workflow startet mit einer Schülerauswahl per Suche
+- Aus der Schülerliste kann direkt in den Ausleihe-Workflow gesprungen werden
+- Das Item-Eingabefeld wird erst nach Auswahl eines Schülers aktiviert
+- Gültige Item-IDs lösen sofort eine neue Ausleihe für den gewählten Schüler aus
+- Die aktive Ausleihliste des gewählten Schülers wird direkt darunter angezeigt
 
-### Student Imports & Data Quality
+### Importe und Datenqualität
 
-- All import workflows are centralized in **Verwaltung -> Importe** (admin second layer)
-- JSON import via file picker (Books, Items, Students, Leases)
-- WiB CSV import via file picker (Students)
-- Name conversion workflow (encoding preview/apply with per-row edits) is in **Verwaltung -> Importe**
-- School year input is provided in the admin import tab and applied to student imports
-- School year remains import metadata (timeline alignment), not a table filter
-- Grade timeline tracking in `StudentGradeHistory` (per student/year/source)
-- Name encoding repair workflow:
-  - Preview proposed fixes
-  - Select/reject individual fixes
-  - Edit individual fix proposals manually
-  - Apply selected fixes only
+- Alle Import-Workflows sind in **Verwaltung -> Importe** gebündelt
+- JSON-Importe für Bücher, Items, Schüler und Leihen
+- WiB-CSV-Import für Schüler
+- Namenskorrekturen mit Vorschau, Auswahl, Ablehnung und manueller Bearbeitung
+- Schuljahresfeld für Schülerimporte
+- Der Gefahrenbereich kann alle Anwendungsdaten außer Benutzern löschen
+- Schuljahr wird als Import-Metadatum verwendet und nicht als Tabellenfilter
+- Die Jahrgangshistorie landet in `StudentGradeHistory`
 
-### Reusability/Refactor State
+### Wiederverwendung
 
-- Shared file upload hook: `src/lib/useFileUpload.ts`
-- Shared import route wrapper: `src/lib/import-route.ts`
-- Shared sort header button component
-- Shared editable row action component
+- Gemeinsamer Upload-Hook: `src/lib/useFileUpload.ts`
+- Gemeinsame Import-Route-Hülle: `src/lib/import-route.ts`
+- Gemeinsame Sortier-Button-Komponente
+- Gemeinsame Komponenten für bearbeitbare Tabellenzeilen
 
-## Data Model Summary
+## Datenmodell
 
-Main Prisma entities:
+Wichtige Prisma-Entitäten:
 
 - `Book`
-- `Item` (+ `ItemStatus`)
-- `Student` (+ `StudentStatus`)
+- `Item` und `ItemStatus`
+- `Student` und `StudentStatus`
 - `StudentGradeHistory`
-- `Lease` (student-item lending relation)
-- Auth entities (`User`, `Session`, `Account`, `Verification`)
+- `Lease`
+- Auth-Entitäten (`User`, `Session`, `Account`, `Verification`)
 
-See full schema in `prisma/schema.prisma`.
+Das vollständige Schema steht in `prisma/schema.prisma`.
 
-## Setup
+## Einrichtung
 
-## Prerequisites
+### Voraussetzungen
 
 - Node.js 22+
 - npm 11+
-- `.env.local` with database/auth variables
+- `.env.local` mit Datenbank- und Auth-Variablen
 
-## Installation
+### Installation
 
 ```bash
 npm install
 ```
 
-## Environment
+### Umgebung
 
-Required Prisma-related variables include:
+Benötigte Prisma-Variablen:
 
 - `POSTGRES_PRISMA_URL`
 - `POSTGRES_URL_NON_POOLING`
 
-Pull from Vercel if needed:
+Wenn nötig, kannst du die Werte aus Vercel ziehen:
 
 ```bash
 vercel env pull .env.local
 ```
 
-## Commands
+## Befehle
 
-### App
+### Anwendung
 
 ```bash
 npm run dev
@@ -146,7 +136,7 @@ npm run build
 npm run start
 ```
 
-### Quality
+### Qualität
 
 ```bash
 npm run lint
@@ -165,32 +155,34 @@ npx prisma db seed
 npx prisma db pull
 ```
 
-## Testing & CI
+## Tests und CI
 
-- Local tests: `npm run test`
-- Browser E2E tests (Playwright):
-  - One-time browser install: `npm run test:e2e:install`
-  - Run E2E suite: `npm run test:e2e`
-- Current automated regressions cover:
-  - role/access helpers and protected API behavior
-  - import/parser logic (WiB CSV, leases JSON)
-  - name-fix proposal logic
-  - browser flows for student row navigation, item-student navigation, and immediate return flow
-- GitHub Actions workflow runs on push/PR to `main`:
-  - lint
-  - test
-  - build
+- Lokale Tests: `npm run test`
+- Browser-Tests mit Playwright:
+  - Browser einmalig installieren: `npm run test:e2e:install`
+  - E2E-Suite ausführen: `npm run test:e2e`
+- Die Tests liegen jetzt im Verzeichnis `test/`
+- Automatisch abgesicherte Bereiche:
+  - Rollen- und Zugriffshilfen
+  - geschützte API-Routen
+  - Import- und Parserlogik
+  - Namenskorrektur-Logik
+  - Browser-Flows für Schülernavigation, Item-Schüler-Navigation und sofortige Rückgabe
+- GitHub Actions läuft bei Push und Pull Requests auf `main` und prüft:
+  - Lint
+  - Tests
+  - Build
 
-Workflow file:
+Workflow-Datei:
 
 - `.github/workflows/ci-main.yml`
 
-## Import Policy
+## Import-Richtlinie
 
-- All imports are performed through UI file selectors.
-- No fixed local file path imports are used by active application routes.
+- Importe laufen über UI-Dateiauswahl.
+- Aktive Anwendungsrouten verwenden keine festen lokalen Dateipfade.
 
-## Project Structure (Relevant)
+## Relevante Struktur
 
 ```text
 lfb2/
@@ -199,32 +191,27 @@ lfb2/
     seed.ts
   src/
     app/
-      books/
-      students/
-        [id]/
-          leases/
-      api/
-        books/
-        items/
-          [id]/
-            return/
-        students/
-          [id]/
-            leases/
-    components/
-      books/
-      students/
       admin/
+      books/
+      lease/
+      return/
+      students/
+      api/
+    components/
+      admin/
+      books/
+      leases/
+      returns/
+      students/
       ui/
     lib/
       prisma.ts
       import-route.ts
       useFileUpload.ts
-      item-import.ts
-      student-import.ts
-      student-import-wib.ts
-      student-name-fixes.ts
       students-access.ts
+  test/
+    src/
+    e2e/
   .github/workflows/
     ci-main.yml
 ```

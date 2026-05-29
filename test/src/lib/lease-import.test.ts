@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { parseLeaseImportPayload } from "./lease-import";
+import { parseLeaseImportPayload } from "@/lib/lease-import";
 
 test("parseLeaseImportPayload parses valid entries", () => {
   const payload = [

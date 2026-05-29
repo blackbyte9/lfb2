@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { normalizeSchoolYear, parseWibCsvPayload } from "./student-import-wib";
+import { normalizeSchoolYear, parseWibCsvPayload } from "@/lib/student-import-wib";
 
 test("parseWibCsvPayload parses valid WiB CSV rows", () => {
   const csv = ["Klasse;Familienname;Rufname", "10A;Schmidt;Anna", "9B;Meyer;Tom"].join("\n");

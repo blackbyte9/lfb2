@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { ensureTestEnv, readJson } from "@/test/helpers";
+import { ensureTestEnv, readJson } from "../../../../helpers";
 
 ensureTestEnv();
 
 test("GET /api/students rejects guest role", async () => {
-  const { GET } = await import("./route");
+  const { GET } = await import("@/app/api/students/route");
   const { auth } = await import("@/lib/auth");
 
   const originalGetSession = auth.api.getSession;
@@ -21,7 +21,7 @@ test("GET /api/students rejects guest role", async () => {
 });
 
 test("GET /api/students maps activeLeasesCount", async () => {
-  const { GET } = await import("./route");
+  const { GET } = await import("@/app/api/students/route");
   const { auth } = await import("@/lib/auth");
   const { prisma } = await import("@/lib/prisma");
 

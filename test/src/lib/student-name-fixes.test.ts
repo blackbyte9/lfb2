@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildStudentNameFixProposals } from "./student-name-fixes";
+import { buildStudentNameFixProposals } from "@/lib/student-name-fixes";
 
 test("buildStudentNameFixProposals fixes cp1252/utf8 mojibake names", () => {
   const fixes = buildStudentNameFixProposals([

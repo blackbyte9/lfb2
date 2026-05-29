@@ -61,12 +61,13 @@ type Props = {
   books: BookOption[];
   initialItems: ItemRow[];
   canManage: boolean;
+  canReturn: boolean;
   highlightItemId?: string | null;
 };
 
 const ITEM_STATUSES: ItemStatus[] = ["NEW", "USED", "DAMAGED", "REMOVED"];
 
-export function BookItemsManager({ book, books, initialItems, canManage, highlightItemId = null }: Props) {
+export function BookItemsManager({ book, books, initialItems, canManage, canReturn, highlightItemId = null }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<ItemRow[]>(initialItems);
   const [sortBy, setSortBy] = useState<"id" | "status" | "leased">("leased");
@@ -478,7 +479,7 @@ export function BookItemsManager({ book, books, initialItems, canManage, highlig
                             </option>
                           ))}
                         </select>
-                        {item.isLeased && (
+                        {item.isLeased && canReturn && (
                           <Button
                             size="xs"
                             variant="outline"

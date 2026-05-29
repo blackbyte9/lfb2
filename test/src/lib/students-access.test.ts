@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { canAccessStudents } from "./students-access";
+import { canAccessStudents } from "@/lib/students-access";
 
 test("students access is restricted to USER and ADMIN", () => {
   assert.equal(canAccessStudents(undefined), false);

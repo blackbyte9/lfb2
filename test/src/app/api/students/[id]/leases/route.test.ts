@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { ensureTestEnv, readJson } from "@/test/helpers";
+import { ensureTestEnv, readJson } from "../../../../../../helpers";
 
 ensureTestEnv();
 
 test("GET /api/students/[id]/leases rejects guest role", async () => {
-  const { GET } = await import("./route");
+  const { GET } = await import("@/app/api/students/[id]/leases/route");
   const { auth } = await import("@/lib/auth");
 
   const originalGetSession = auth.api.getSession;
@@ -22,8 +22,38 @@ test("GET /api/students/[id]/leases rejects guest role", async () => {
   }
 });
 
+test("GET /api/students/[id]/leases accepts admin role", async () => {
+  const { GET } = await import("@/app/api/students/[id]/leases/route");
+  const { auth } = await import("@/lib/auth");
+  const { prisma } = await import("@/lib/prisma");
+
+  const originalGetSession = auth.api.getSession;
+  const originalFindUnique = prisma.student.findUnique;
+  const originalFindMany = prisma.lease.findMany;
+  auth.api.getSession = (async () => ({ user: { role: "ADMIN" } })) as typeof auth.api.getSession;
+  prisma.student.findUnique = (async () => ({
+    id: 1,
+    idOld: "1001",
+    firstname: "Anna",
+    lastname: "Meyer",
+    course: "10A",
+  })) as typeof prisma.student.findUnique;
+  prisma.lease.findMany = (async () => []) as typeof prisma.lease.findMany;
+
+  try {
+    const response = await GET(new Request("http://localhost/api/students/1/leases") as never, {
+      params: Promise.resolve({ id: "1" }),
+    });
+    assert.equal(response.status, 200);
+  } finally {
+    auth.api.getSession = originalGetSession;
+    prisma.student.findUnique = originalFindUnique;
+    prisma.lease.findMany = originalFindMany;
+  }
+});
+
 test("GET /api/students/[id]/leases validates id and missing student", async () => {
-  const { GET } = await import("./route");
+  const { GET } = await import("@/app/api/students/[id]/leases/route");
   const { auth } = await import("@/lib/auth");
   const { prisma } = await import("@/lib/prisma");
 
@@ -50,7 +80,7 @@ test("GET /api/students/[id]/leases validates id and missing student", async () 
 });
 
 test("GET /api/students/[id]/leases returns student and active leases", async () => {
-  const { GET } = await import("./route");
+  const { GET } = await import("@/app/api/students/[id]/leases/route");
   const { auth } = await import("@/lib/auth");
   const { prisma } = await import("@/lib/prisma");
 
@@ -58,7 +88,7 @@ test("GET /api/students/[id]/leases returns student and active leases", async ()
   const originalFindUnique = prisma.student.findUnique;
   const originalFindMany = prisma.lease.findMany;
 
-  auth.api.getSession = (async () => ({ user: { role: "ADMIN" } })) as typeof auth.api.getSession;
+  auth.api.getSession = (async () => ({ user: { role: "USER" } })) as typeof auth.api.getSession;
   prisma.student.findUnique = (async () => ({
     id: 1,
     idOld: "1001",
