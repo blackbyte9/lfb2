@@ -1,20 +1,22 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useActionState, useState, useRef, useEffect } from "react";
 import { createUserAction } from "@/app/admin/actions";
 
 export function AdminCreateUserForm() {
   const [open, setOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(createUserAction, null);
 
-  // Close form on success (state is null after a successful submission that was previously non-null)
-  const [submitted, setSubmitted] = useState(false);
+  // Track how many times we've submitted so we can detect a null return after a real submission
+  const submitCountRef = useRef(0);
+  const lastSeenCountRef = useRef(0);
+
   useEffect(() => {
-    if (submitted && state === null) {
+    if (submitCountRef.current > lastSeenCountRef.current && state === null && !isPending) {
+      lastSeenCountRef.current = submitCountRef.current;
       setOpen(false);
-      setSubmitted(false);
     }
-  }, [submitted, state]);
+  }, [state, isPending]);
 
   if (!open) {
     return (
@@ -31,7 +33,7 @@ export function AdminCreateUserForm() {
   return (
     <form
       action={(formData) => {
-        setSubmitted(true);
+        submitCountRef.current += 1;
         formAction(formData);
       }}
       className="rounded-lg border border-black/10 bg-[#f9fafb] p-4"
