@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { ItemIdInput } from "@/components/ui/item-id-input";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
+import { useStudentSelection } from "@/components/providers/student-selection-provider";
 import { itemIdSchema } from "@/lib/book-schemas";
 
 type StudentRow = {
@@ -79,6 +80,9 @@ type Props = {
 };
 
 export function LeaseWorkflow({ initialStudentId = null }: Props) {
+  const { selectedStudentId, setSelectedStudentId, isSelectionHydrated } = useStudentSelection();
+  const loadStudentLeasesRequestRef = useRef(0);
+  const pendingRouteStudentIdRef = useRef<number | null>(initialStudentId);
   const [selectedStudent, setSelectedStudent] = useState<StudentRow | null>(null);
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [studentQuery, setStudentQuery] = useState("");
@@ -87,7 +91,6 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
   const [studentsLoading, setStudentsLoading] = useState(false);
 
   const [itemId, setItemId] = useState("");
-  const [itemSubmitTrigger, setItemSubmitTrigger] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [returningItemId, setReturningItemId] = useState<string | null>(null);
 
@@ -197,17 +200,14 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
     }
   }
 
-  async function loadStudentLeases(studentId: number) {
+  async function fetchStudentLeases(studentId: number) {
     const response = await fetch(`/api/students/${studentId}/leases`);
     const payload = (await response.json()) as StudentLeasesResponse | { error?: string };
 
-    if (!response.ok) {
-      setError((payload as { error?: string }).error ?? "Ausleihen konnten nicht geladen werden");
-      setActiveLeases([]);
-      return false;
-    }
+    return { response, payload };
+  }
 
-    const leasesResponse = payload as StudentLeasesResponse;
+  function applyStudentLeases(leasesResponse: StudentLeasesResponse) {
     setActiveLeases(leasesResponse.leases);
 
     setSelectedStudent((current) => {
@@ -225,16 +225,46 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
         activeLeasesCount: leasesResponse.leases.length,
       };
     });
-    return true;
   }
 
   useEffect(() => {
-    if (!initialStudentId) {
+    if (!isSelectionHydrated) {
       return;
     }
 
-    void loadStudentLeases(initialStudentId);
-  }, [initialStudentId]);
+    const resolvedStudentId = pendingRouteStudentIdRef.current ?? selectedStudentId;
+    if (!resolvedStudentId) {
+      return;
+    }
+    const targetStudentId = resolvedStudentId;
+
+    const requestId = ++loadStudentLeasesRequestRef.current;
+
+    async function syncSelectedStudentLeases() {
+      const { response, payload } = await fetchStudentLeases(targetStudentId);
+
+      // Ignore stale responses when selection changed while this request was in flight.
+      if (requestId !== loadStudentLeasesRequestRef.current) {
+        return;
+      }
+
+      if (!response.ok) {
+        setError((payload as { error?: string }).error ?? "Ausleihen konnten nicht geladen werden");
+        setActiveLeases([]);
+        return;
+      }
+
+      applyStudentLeases(payload as StudentLeasesResponse);
+      if (pendingRouteStudentIdRef.current === targetStudentId) {
+        pendingRouteStudentIdRef.current = null;
+        if (selectedStudentId !== targetStudentId) {
+          setSelectedStudentId(targetStudentId);
+        }
+      }
+    }
+
+    void syncSelectedStudentLeases();
+  }, [isSelectionHydrated, selectedStudentId, setSelectedStudentId]);
 
   async function openStudentModal() {
     setStudentModalOpen(true);
@@ -255,13 +285,11 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
       return;
     }
 
-    setSelectedStudent(chosen);
+    setSelectedStudentId(chosen.id);
     setStudentModalOpen(false);
     setError(null);
     setSuccess(null);
     setItemId("");
-
-    await loadStudentLeases(chosen.id);
   }
 
   async function leaseByItemId(normalizedItemId: string) {
@@ -321,17 +349,20 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
     setSuccess(null);
 
     try {
-      const response = await fetch(`/api/items/${encodeURIComponent(itemIdToReturn)}/return`, {
+      const returnResponse = await fetch(`/api/items/${encodeURIComponent(itemIdToReturn)}/return`, {
         method: "POST",
       });
 
-      const payload = (await response.json()) as ReturnResponse;
-      if (!response.ok) {
-        setError(payload.error ?? "Rückgabe fehlgeschlagen");
+      const returnPayload = (await returnResponse.json()) as ReturnResponse;
+      if (!returnResponse.ok) {
+        setError(returnPayload.error ?? "Rückgabe fehlgeschlagen");
         return;
       }
 
-      await loadStudentLeases(selectedStudent.id);
+      const { response: leasesResponse, payload: leasesPayload } = await fetchStudentLeases(selectedStudent.id);
+      if (leasesResponse.ok) {
+        applyStudentLeases(leasesPayload as StudentLeasesResponse);
+      }
       setSuccess(`Item ${itemIdToReturn} wurde zurückgegeben`);
     } catch {
       setError("Rückgabe fehlgeschlagen");
@@ -380,7 +411,6 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
                 }
               }}
               onSubmit={(normalized) => leaseByItemId(normalized)}
-              submitTrigger={itemSubmitTrigger}
               clearOnSubmit
               flavor="lease"
               className="w-full"
@@ -399,13 +429,6 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
           </div>
         )}
 
-        {selectedStudent ? (
-          <div className="flex justify-end">
-            <Button size="sm" variant="outline" onClick={() => setItemSubmitTrigger((current) => current + 1)} disabled={isSubmitting}>
-              Ausleihe starten
-            </Button>
-          </div>
-        ) : null}
       </div>
 
       {success ? <p className="text-sm font-medium text-green-700">{success}</p> : null}
@@ -413,11 +436,8 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
 
       {selectedStudent ? (
         <div className="space-y-3 rounded-lg border border-black/10 bg-white p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-lg font-semibold text-[#131820]">Aktive Ausleihen</h2>
-            <Link href={`/students/${selectedStudent.id}/leases`} className="text-sm font-medium text-[#006b2d] hover:underline">
-              Zur Schüleransicht
-            </Link>
           </div>
 
           {activeLeases.length === 0 ? (

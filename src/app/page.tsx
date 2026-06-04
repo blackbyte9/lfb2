@@ -20,11 +20,6 @@ export default async function Home() {
             <p>
               Aktuelle Rolle: <strong>{session.user.role}</strong>
             </p>
-            {session.user.role === "ADMIN" ? (
-              <Link href="/admin" className="mt-2 inline-block font-semibold text-[#006b2d]">
-                Zur Verwaltung
-              </Link>
-            ) : null}
           </div>
         ) : (
           <div className="rounded-lg border border-black/10 bg-white px-4 py-3 text-sm">

@@ -3,6 +3,7 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "prettier.requireConfig": true,
   "cSpell.words": [
+    "Ausleih",
     "Ausleihliste",
     "cuid",
     "datasource",
@@ -15,6 +16,7 @@
     "Parserlogik",
     "postgresql",
     "rollenbasierte",
+    "Rückgabehistorie",
     "Verfügbarkeitsinformationen",
     "Verlaufsdaten"
   ],
@@ -23,6 +25,9 @@
     "**/tsconfig*.json",
     "**/.eslintrc*",
     "**/.prettierrc*",
-    "**/components.json"
-  ]
+    "**/components.json",
+    "**/.vscode/settings.json"
+  ],
+  "WillLuke.nextjs.addTypesOnSave": true,
+  "WillLuke.nextjs.hasPrompted": true
 }

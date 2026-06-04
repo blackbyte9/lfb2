@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import Link from "next/link";
 
 import { BookItemsManager, type BookOption, type ItemRow } from "@/components/books/book-items-manager";
 import { auth } from "@/lib/auth";
@@ -53,7 +52,6 @@ export default async function BookItemsPage({ params, searchParams }: Props) {
     },
   });
 
-  const isAdmin = session?.user.role === "ADMIN";
   const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
   const canReturn = session?.user.role === "ADMIN" || session?.user.role === "USER";
 
@@ -76,11 +74,6 @@ export default async function BookItemsPage({ params, searchParams }: Props) {
       <div className="w-full space-y-4 rounded-xl border border-black/10 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-[#131820]">Buch-Items</h1>
-          {isAdmin && (
-            <Link href="/admin" className="text-sm font-medium text-[#006b2d] hover:underline">
-              Zur Verwaltung
-            </Link>
-          )}
         </div>
 
         <BookItemsManager

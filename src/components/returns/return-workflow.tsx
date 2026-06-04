@@ -1,9 +1,41 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { itemIdSchema } from "@/lib/book-schemas";
+import { useStudentSelection } from "@/components/providers/student-selection-provider";
 import { ItemIdInput } from "@/components/ui/item-id-input";
+
+type LeaseRow = {
+  id: number;
+  leasedAt: string;
+  item: {
+    id: string;
+    book: {
+      id: number;
+      name: string;
+    };
+  };
+};
+
+type StudentSummary = {
+  id: number;
+  idOld: string | null;
+  firstname: string;
+  lastname: string;
+  course: string;
+};
+
+type StudentLeasesResponse = {
+  student: StudentSummary;
+  leases: LeaseRow[];
+  error?: string;
+};
+
+type SelectedStudentSnapshot = {
+  studentId: number;
+  student: StudentSummary;
+  leases: LeaseRow[];
+};
 
 type ReturnResponse = {
   ok: boolean;
@@ -21,26 +53,68 @@ type ReturnResponse = {
     lastname: string;
     course: string;
   };
-  remainingLeases?: Array<{
-    id: number;
-    leasedAt: string;
-    item: {
-      id: string;
-      book: {
-        id: number;
-        name: string;
-      };
-    };
-  }>;
+  remainingLeases?: LeaseRow[];
   error?: string;
 };
 
 export function ReturnWorkflow() {
+  const { selectedStudentId, setSelectedStudentId, isSelectionHydrated } = useStudentSelection();
+  const selectedStudentRequestRef = useRef(0);
   const [itemId, setItemId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingSelectedStudent, setIsLoadingSelectedStudent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [result, setResult] = useState<ReturnResponse | null>(null);
+  const [selectedStudentSnapshot, setSelectedStudentSnapshot] = useState<SelectedStudentSnapshot | null>(null);
+
+  useEffect(() => {
+    if (!isSelectionHydrated) {
+      return;
+    }
+
+    if (!selectedStudentId) {
+      return;
+    }
+
+    const targetStudentId = selectedStudentId;
+
+    const requestId = ++selectedStudentRequestRef.current;
+
+    async function loadSelectedStudent() {
+      setIsLoadingSelectedStudent(true);
+      try {
+        const response = await fetch(`/api/students/${targetStudentId}/leases`);
+        const payload = (await response.json()) as StudentLeasesResponse;
+
+        if (requestId !== selectedStudentRequestRef.current) {
+          return;
+        }
+
+        if (!response.ok) {
+          setSelectedStudentSnapshot((current) => {
+            if (current?.studentId !== targetStudentId) {
+              return current;
+            }
+            return null;
+          });
+          return;
+        }
+
+        setSelectedStudentSnapshot({
+          studentId: targetStudentId,
+          student: payload.student,
+          leases: payload.leases,
+        });
+      } finally {
+        if (requestId === selectedStudentRequestRef.current) {
+          setIsLoadingSelectedStudent(false);
+        }
+      }
+    }
+
+    void loadSelectedStudent();
+  }, [isSelectionHydrated, selectedStudentId]);
 
   async function submitReturnByItemId(normalized: string, immediateClear = false) {
     if (immediateClear) {
@@ -65,6 +139,14 @@ export function ReturnWorkflow() {
       }
 
       setResult(payload);
+      if (payload.student?.id) {
+        setSelectedStudentId(payload.student.id);
+        setSelectedStudentSnapshot({
+          studentId: payload.student.id,
+          student: payload.student,
+          leases: payload.remainingLeases ?? [],
+        });
+      }
       setSuccess(`Item ${normalized} wurde zurückgegeben`);
       if (!immediateClear) {
         setItemId("");
@@ -85,6 +167,11 @@ export function ReturnWorkflow() {
 
     await submitReturnByItemId(normalized, true);
   }
+
+  const selectedSnapshotForCurrentId =
+    selectedStudentId && selectedStudentSnapshot?.studentId === selectedStudentId ? selectedStudentSnapshot : null;
+  const displayStudent = result?.student ?? selectedSnapshotForCurrentId?.student ?? null;
+  const displayLeases = result?.student ? (result.remainingLeases ?? []) : (selectedSnapshotForCurrentId?.leases ?? []);
 
   return (
     <div className="space-y-4">
@@ -115,26 +202,25 @@ export function ReturnWorkflow() {
       {success ? <p className="text-sm font-medium text-green-700">{success}</p> : null}
       {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
 
-      {result?.student ? (
+      {isLoadingSelectedStudent && !displayStudent ? <p className="text-sm text-[#364152]">Schülerdaten werden geladen...</p> : null}
+
+      {displayStudent ? (
         <div className="space-y-4 rounded-lg border border-black/10 bg-white p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div>
               <h2 className="text-lg font-semibold text-[#131820]">
-                {result.student.lastname}, {result.student.firstname}
+                {displayStudent.lastname}, {displayStudent.firstname}
               </h2>
               <p className="text-sm text-[#364152]">
-                {result.student.idOld ? `ID: ${result.student.idOld} · ` : ""}
-                Klasse: {result.student.course}
+                {displayStudent.idOld ? `ID: ${displayStudent.idOld} · ` : ""}
+                Klasse: {displayStudent.course}
               </p>
             </div>
-            <Link href={`/students/${result.student.id}/leases`} className="text-sm font-medium text-[#006b2d] hover:underline">
-              Zur Schüleransicht
-            </Link>
           </div>
 
-          <h3 className="text-sm font-semibold text-[#131820]">Weitere aktive Ausleihen</h3>
+          <h3 className="text-sm font-semibold text-[#131820]">Aktive Ausleihen</h3>
 
-          {(result.remainingLeases ?? []).length === 0 ? (
+          {displayLeases.length === 0 ? (
             <p className="text-sm text-[#4b5563]">Keine weiteren aktiven Ausleihen.</p>
           ) : (
             <div className="overflow-hidden rounded-md border border-black/10">
@@ -147,7 +233,7 @@ export function ReturnWorkflow() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-black/5">
-                  {(result.remainingLeases ?? []).map((lease) => (
+                  {displayLeases.map((lease) => (
                     <tr key={lease.id}>
                       <td className="px-3 py-2">{lease.item.book.name}</td>
                       <td className="px-3 py-2 font-mono text-xs">{lease.item.id}</td>

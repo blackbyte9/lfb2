@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -34,7 +33,6 @@ export default async function BooksPage() {
     createdAt: book.createdAt.toISOString(),
   }));
 
-  const isAdmin = session?.user.role === "ADMIN";
   const canManage = session?.user.role === "ADMIN" || session?.user.role === "USER";
 
   return (
@@ -42,11 +40,6 @@ export default async function BooksPage() {
       <div className="w-full space-y-4 rounded-xl border border-black/10 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-[#131820]">Bücher</h1>
-          {isAdmin && (
-            <Link href="/admin" className="text-sm font-medium text-[#006b2d] hover:underline">
-              Zur Verwaltung
-            </Link>
-          )}
         </div>
         <BooksManager initialBooks={tableRows} canManage={canManage} />
       </div>

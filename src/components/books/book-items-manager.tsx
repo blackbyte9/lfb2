@@ -112,18 +112,6 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
     row?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [highlightItemId, sortedItems]);
 
-  async function loadItems() {
-    const res = await fetch(`/api/items?bookId=${book.id}`);
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      setItemsError(data.error ?? "Fehler beim Laden der Items");
-      return;
-    }
-
-    const loaded = (await res.json()) as ItemRow[];
-    setItems(loaded);
-  }
-
   async function handleCreateItem() {
     setItemsError(null);
     setItemsInfo(null);
@@ -449,7 +437,7 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
                       <button
                         type="button"
                         className="font-medium text-amber-700 hover:underline text-left"
-                        onClick={() => router.push(`/students/${item.leasedStudentId}/leases`)}
+                        onClick={() => router.push(`/lease?studentId=${item.leasedStudentId}`)}
                       >
                         {item.leasedStudentName ?? "Ausgeliehen"}
                       </button>

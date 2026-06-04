@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { StudentSelectionProvider } from "@/components/providers/student-selection-provider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 
@@ -45,9 +46,11 @@ export default function RootLayout({
       )}
     >
       <body className="flex min-h-full flex-col bg-[#cfd3dd] text-[#131820]">
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">{children}</div>
-        <SiteFooter />
+        <StudentSelectionProvider>
+          <SiteHeader />
+          <div className="flex flex-1 flex-col">{children}</div>
+          <SiteFooter />
+        </StudentSelectionProvider>
         <SpeedInsights />
         <Analytics />
       </body>
