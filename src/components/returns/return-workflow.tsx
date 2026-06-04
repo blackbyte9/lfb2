@@ -1,24 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { StudentHistoryModalTrigger } from "@/components/students/student-history-modal-trigger";
+import { ActiveLeaseTableRow, type ActiveLeaseTableRowData } from "@/components/leases/active-lease-table-row";
+import { StudentWorkflowSection } from "@/components/students/student-workflow-section";
 import { itemIdSchema } from "@/lib/book-schemas";
 import { useStudentSelection } from "@/components/providers/student-selection-provider";
 import { ItemIdInput } from "@/components/ui/item-id-input";
 
-type LeaseRow = {
-  id: number;
-  leasedAt: string;
-  item: {
-    id: string;
-    book: {
-      id: number;
-      name: string;
-    };
-  };
-};
+type LeaseRow = ActiveLeaseTableRowData;
 
 type StudentSummary = {
   id: number;
@@ -88,9 +78,15 @@ type ItemHistoryEvent = {
   student: ItemHistoryLease["student"];
 };
 
-export function ReturnWorkflow() {
+type Props = {
+  initialStudentId?: number | null;
+  resetSelectionOnMount?: boolean;
+};
+
+export function ReturnWorkflow({ initialStudentId = null, resetSelectionOnMount = false }: Props) {
   const { selectedStudentId, setSelectedStudentId, isSelectionHydrated } = useStudentSelection();
   const selectedStudentRequestRef = useRef(0);
+  const pendingRouteStudentIdRef = useRef<number | null>(initialStudentId);
   const [itemId, setItemId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingSelectedStudent, setIsLoadingSelectedStudent] = useState(false);
@@ -105,15 +101,27 @@ export function ReturnWorkflow() {
   const [historyEvents, setHistoryEvents] = useState<ItemHistoryEvent[]>([]);
 
   useEffect(() => {
+    if (!isSelectionHydrated || !resetSelectionOnMount) {
+      return;
+    }
+
+    pendingRouteStudentIdRef.current = null;
+    if (selectedStudentId !== null) {
+      setSelectedStudentId(null);
+    }
+  }, [isSelectionHydrated, resetSelectionOnMount, selectedStudentId, setSelectedStudentId]);
+
+  useEffect(() => {
     if (!isSelectionHydrated) {
       return;
     }
 
-    if (!selectedStudentId) {
+    const resolvedStudentId = pendingRouteStudentIdRef.current ?? selectedStudentId;
+    if (!resolvedStudentId) {
       return;
     }
 
-    const targetStudentId = selectedStudentId;
+    const targetStudentId = resolvedStudentId;
 
     const requestId = ++selectedStudentRequestRef.current;
 
@@ -128,12 +136,18 @@ export function ReturnWorkflow() {
         }
 
         if (!response.ok) {
+          // If routed or globally selected student id is no longer valid, reset to empty workflow state.
+          pendingRouteStudentIdRef.current = null;
+          setSelectedStudentId(null);
           setSelectedStudentSnapshot((current) => {
             if (current?.studentId !== targetStudentId) {
               return current;
             }
             return null;
           });
+          setResult(null);
+          setError(null);
+          setSuccess(null);
           return;
         }
 
@@ -142,6 +156,13 @@ export function ReturnWorkflow() {
           student: payload.student,
           leases: payload.leases,
         });
+
+        if (pendingRouteStudentIdRef.current === targetStudentId) {
+          pendingRouteStudentIdRef.current = null;
+          if (selectedStudentId !== targetStudentId) {
+            setSelectedStudentId(targetStudentId);
+          }
+        }
       } finally {
         if (requestId === selectedStudentRequestRef.current) {
           setIsLoadingSelectedStudent(false);
@@ -150,7 +171,7 @@ export function ReturnWorkflow() {
     }
 
     void loadSelectedStudent();
-  }, [isSelectionHydrated, selectedStudentId]);
+  }, [isSelectionHydrated, selectedStudentId, setSelectedStudentId]);
 
   async function submitReturnByItemId(normalized: string, immediateClear = false) {
     if (immediateClear) {
@@ -263,7 +284,7 @@ export function ReturnWorkflow() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-black/10 bg-[#f2f4f8] p-4">
+      <StudentWorkflowSection student={displayStudent}>
         <ItemIdInput
           id="return-item-id"
           label="Item-ID (Scanner)"
@@ -285,7 +306,7 @@ export function ReturnWorkflow() {
           ariaLabel="Item-ID für Rückgabe"
         />
         <p className="mt-2 text-xs text-[#4b5563]">Die Rückgabe startet automatisch, sobald das Format `RSV0000000` vollständig ist.</p>
-      </div>
+      </StudentWorkflowSection>
 
       {success ? <p className="text-sm font-medium text-green-700">{success}</p> : null}
       {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
@@ -294,26 +315,6 @@ export function ReturnWorkflow() {
 
       {displayStudent ? (
         <div className="space-y-4 rounded-lg border border-black/10 bg-white p-4">
-          <div className="space-y-2">
-            <div>
-              <h2 className="text-lg font-semibold text-[#131820]">
-                {displayStudent.lastname}, {displayStudent.firstname}
-              </h2>
-              <p className="text-sm text-[#364152]">
-                {displayStudent.idOld ? `ID: ${displayStudent.idOld} · ` : ""}
-                Klasse: {displayStudent.course}
-              </p>
-            </div>
-
-            <StudentHistoryModalTrigger
-              student={{
-                id: displayStudent.id,
-                firstname: displayStudent.firstname,
-                lastname: displayStudent.lastname,
-              }}
-            />
-          </div>
-
           <h3 className="text-sm font-semibold text-[#131820]">Aktive Ausleihen</h3>
 
           {displayLeases.length === 0 ? (
@@ -330,23 +331,11 @@ export function ReturnWorkflow() {
                 </thead>
                 <tbody className="divide-y divide-black/5">
                   {displayLeases.map((lease) => (
-                    <tr key={lease.id}>
-                      <td className="px-3 py-2">
-                        <Link href={`/books/${lease.item.book.id}?itemId=${lease.item.id}`} className="text-[#006b2d] hover:underline">
-                          {lease.item.book.name}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-2">
-                        <button
-                          type="button"
-                          className="font-mono text-xs text-[#006b2d] hover:underline"
-                          onClick={() => void handleOpenItemHistory(lease.item.id)}
-                        >
-                          {lease.item.id}
-                        </button>
-                      </td>
-                      <td className="px-3 py-2">{new Date(lease.leasedAt).toLocaleDateString("de-DE")}</td>
-                    </tr>
+                    <ActiveLeaseTableRow
+                      key={lease.id}
+                      lease={lease}
+                      onOpenItemHistory={(itemIdToInspect) => void handleOpenItemHistory(itemIdToInspect)}
+                    />
                   ))}
                 </tbody>
               </table>

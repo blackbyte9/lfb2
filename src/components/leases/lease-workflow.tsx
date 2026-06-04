@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 
+import { ActiveLeaseTableRow, type ActiveLeaseTableRowData } from "@/components/leases/active-lease-table-row";
 import { ItemIdInput } from "@/components/ui/item-id-input";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { useStudentSelection } from "@/components/providers/student-selection-provider";
-import { StudentHistoryModalTrigger } from "@/components/students/student-history-modal-trigger";
+import { StudentWorkflowSection } from "@/components/students/student-workflow-section";
 import { itemIdSchema } from "@/lib/book-schemas";
 
 type StudentRow = {
@@ -21,17 +21,7 @@ type StudentRow = {
   activeLeasesCount: number;
 };
 
-type LeaseRow = {
-  id: number;
-  leasedAt: string;
-  item: {
-    id: string;
-    book: {
-      id: number;
-      name: string;
-    };
-  };
-};
+type LeaseRow = ActiveLeaseTableRowData;
 
 type StudentLeasesResponse = {
   student: {
@@ -106,9 +96,10 @@ const STUDENT_STATUS_LABELS: Record<StudentRow["status"], string> = {
 
 type Props = {
   initialStudentId?: number | null;
+  resetSelectionOnMount?: boolean;
 };
 
-export function LeaseWorkflow({ initialStudentId = null }: Props) {
+export function LeaseWorkflow({ initialStudentId = null, resetSelectionOnMount = false }: Props) {
   const { selectedStudentId, setSelectedStudentId, isSelectionHydrated } = useStudentSelection();
   const loadStudentLeasesRequestRef = useRef(0);
   const pendingRouteStudentIdRef = useRef<number | null>(initialStudentId);
@@ -153,6 +144,17 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
       return haystack.includes(query);
     });
   }, [studentQuery, students]);
+
+  useEffect(() => {
+    if (!isSelectionHydrated || !resetSelectionOnMount) {
+      return;
+    }
+
+    pendingRouteStudentIdRef.current = null;
+    if (selectedStudentId !== null) {
+      setSelectedStudentId(null);
+    }
+  }, [isSelectionHydrated, resetSelectionOnMount, selectedStudentId, setSelectedStudentId]);
 
   const studentColumns = useMemo<ColumnDef<StudentRow>[]>(
     () => [
@@ -283,8 +285,13 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
       }
 
       if (!response.ok) {
-        setError((payload as { error?: string }).error ?? "Ausleihen konnten nicht geladen werden");
+        // If routed or globally selected student id is no longer valid, reset to empty workflow state.
+        pendingRouteStudentIdRef.current = null;
+        setSelectedStudentId(null);
+        setSelectedStudent(null);
         setActiveLeases([]);
+        setError(null);
+        setSuccess(null);
         return;
       }
 
@@ -459,37 +466,14 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-3 rounded-lg border border-black/10 bg-[#f2f4f8] p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-2">
-            <div>
-              <p className="text-sm font-semibold text-[#131820]">Schüler</p>
-              {selectedStudent ? (
-                <p className="mt-1 text-sm text-[#364152]">
-                  {selectedStudent.lastname}, {selectedStudent.firstname}
-                  {selectedStudent.idOld ? ` · ID: ${selectedStudent.idOld}` : ""}
-                  {` · Klasse: ${selectedStudent.course}`}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-[#6b7280]">Noch kein Schüler ausgewählt</p>
-              )}
-            </div>
-
-            {selectedStudent ? (
-              <StudentHistoryModalTrigger
-                student={{
-                  id: selectedStudent.id,
-                  firstname: selectedStudent.firstname,
-                  lastname: selectedStudent.lastname,
-                }}
-              />
-            ) : null}
-          </div>
-
+      <StudentWorkflowSection
+        student={selectedStudent}
+        rightAction={
           <Button size="sm" variant="outline" onClick={() => void openStudentModal()}>
             {selectedStudent ? "Schüler wechseln" : "Schüler auswählen"}
           </Button>
-        </div>
+        }
+      >
 
         {selectedStudent ? (
           <>
@@ -527,7 +511,7 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
           </div>
         )}
 
-      </div>
+      </StudentWorkflowSection>
 
       {success ? <p className="text-sm font-medium text-green-700">{success}</p> : null}
       {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
@@ -553,23 +537,11 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
                 </thead>
                 <tbody className="divide-y divide-black/5">
                   {activeLeases.map((lease) => (
-                    <tr key={lease.id}>
-                      <td className="px-3 py-2">
-                        <Link href={`/books/${lease.item.book.id}?itemId=${lease.item.id}`} className="text-[#006b2d] hover:underline">
-                          {lease.item.book.name}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-2">
-                        <button
-                          type="button"
-                          className="font-mono text-xs text-[#006b2d] hover:underline"
-                          onClick={() => void handleOpenItemHistory(lease.item.id)}
-                        >
-                          {lease.item.id}
-                        </button>
-                      </td>
-                      <td className="px-3 py-2">{new Date(lease.leasedAt).toLocaleDateString("de-DE")}</td>
-                      <td className="px-3 py-2 text-right">
+                    <ActiveLeaseTableRow
+                      key={lease.id}
+                      lease={lease}
+                      onOpenItemHistory={(itemIdToInspect) => void handleOpenItemHistory(itemIdToInspect)}
+                      actionCell={
                         <Button
                           size="xs"
                           variant="outline"
@@ -578,8 +550,8 @@ export function LeaseWorkflow({ initialStudentId = null }: Props) {
                         >
                           {returningItemId === lease.item.id ? "Rückgabe..." : "Zurückgeben"}
                         </Button>
-                      </td>
-                    </tr>
+                      }
+                    />
                   ))}
                 </tbody>
               </table>

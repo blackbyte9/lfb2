@@ -12,5 +12,5 @@ export default async function StudentLeasesPage({ params }: Props) {
     notFound();
   }
 
-  redirect(`/lease?studentId=${studentId}`);
+  redirect(`/lease/${studentId}`);
 }

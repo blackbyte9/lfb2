@@ -437,7 +437,7 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
                       <button
                         type="button"
                         className="font-medium text-amber-700 hover:underline text-left"
-                        onClick={() => router.push(`/lease?studentId=${item.leasedStudentId}`)}
+                        onClick={() => router.push(`/lease/${item.leasedStudentId}`)}
                       >
                         {item.leasedStudentName ?? "Ausgeliehen"}
                       </button>

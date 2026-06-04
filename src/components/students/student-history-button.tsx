@@ -4,12 +4,15 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
-type StudentHistoryModalTriggerProps = {
+type StudentHistoryButtonProps = {
   student: {
     id: number;
     firstname: string;
     lastname: string;
   };
+  size?: "sm" | "xs";
+  variant?: "default" | "outline" | "ghost";
+  label?: string;
 };
 
 type StudentGradeHistoryRow = {
@@ -34,7 +37,12 @@ type StudentLeaseHistoryRow = {
   };
 };
 
-export function StudentHistoryModalTrigger({ student }: StudentHistoryModalTriggerProps) {
+export function StudentHistoryButton({
+  student,
+  size = "sm",
+  variant = "outline",
+  label = "Verlauf",
+}: StudentHistoryButtonProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,11 +94,11 @@ export function StudentHistoryModalTrigger({ student }: StudentHistoryModalTrigg
 
   return (
     <>
-      <Button size="sm" variant="outline" onClick={() => void openHistory()}>
-        Verlauf
+      <Button size={size} variant={variant} onClick={() => void openHistory()}>
+        {label}
       </Button>
 
-      {open && (
+      {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-3xl rounded-lg bg-white p-4 shadow-lg">
             <div className="flex items-start justify-between gap-2">
@@ -204,7 +212,7 @@ export function StudentHistoryModalTrigger({ student }: StudentHistoryModalTrigg
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }
