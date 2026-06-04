@@ -218,8 +218,8 @@ export function ItemIdInput({
         value={value}
         onChange={(event) => handleChange(event.target.value)}
         onKeyDown={handleKeyDown}
-        onBlur={() => {
-          if (keepFocus) {
+        onBlur={(event) => {
+          if (keepFocus && !event.relatedTarget) {
             window.setTimeout(() => focusInput(), 0);
           }
         }}

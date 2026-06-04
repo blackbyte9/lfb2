@@ -42,19 +42,29 @@ type ItemHistoryLease = {
   };
 };
 
+type ItemHistoryEvent =
+  | {
+      id: string;
+      type: "LEASED" | "RETURNED";
+      date: string;
+      leaseId: number;
+      student: ItemHistoryLease["student"];
+    }
+  | {
+      id: string;
+      type: "COMMENT";
+      date: string;
+      commentId: number;
+      body: string;
+      student: ItemHistoryLease["student"] | null;
+    };
+
 type ItemHistoryResponse = {
   item: {
     id: string;
     status: ItemStatus;
   };
-  leases: ItemHistoryLease[];
-};
-
-type ItemHistoryEvent = {
-  leaseId: number;
-  type: "LEASED" | "RETURNED";
-  date: string;
-  student: ItemHistoryLease["student"];
+  events: ItemHistoryEvent[];
 };
 
 type Props = {
@@ -88,6 +98,10 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [historyItemId, setHistoryItemId] = useState<string | null>(null);
   const [historyEvents, setHistoryEvents] = useState<ItemHistoryEvent[]>([]);
+  const [commentBody, setCommentBody] = useState("");
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [commentStatus, setCommentStatus] = useState<ItemStatus | "">("");
   const itemRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
 
   const sortedBooks = useMemo(() => [...books].sort((a, b) => a.name.localeCompare(b.name, "de")), [books]);
@@ -149,28 +163,11 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
     setNewItemId("");
   }
 
-  async function handleUpdateItemStatus(itemId: string, status: ItemStatus) {
-    setItemsError(null);
-    setItemsInfo(null);
-    setUpdatingItemId(itemId);
-
-    const res = await fetch(`/api/items/${itemId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      setItemsError(data.error ?? "Status konnte nicht aktualisiert werden");
-      setUpdatingItemId(null);
-      return;
-    }
-
-    const updated = (await res.json()) as ItemRow;
-    setItems((prev) => prev.map((item) => (item.id === itemId ? { ...item, status: updated.status } : item)));
-    setItemsInfo(`Status für ${itemId} wurde aktualisiert`);
-    setUpdatingItemId(null);
+  function handleStatusChangeRequested(itemId: string, newStatus: ItemStatus) {
+    // Open the history/comment modal with the new status pre-filled so the user
+    // is prompted to leave a comment alongside every status change.
+    void handleOpenItemHistory(itemId);
+    setCommentStatus(newStatus);
   }
 
   async function handleReturnItem(itemId: string) {
@@ -248,8 +245,11 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
     setHistoryOpen(true);
     setHistoryLoading(true);
     setHistoryError(null);
+    setCommentError(null);
+    setCommentBody("");
     setHistoryItemId(itemId);
     setHistoryEvents([]);
+    setCommentStatus("");
 
     const res = await fetch(`/api/items/${encodeURIComponent(itemId)}/history`);
     const payload = (await res.json()) as ItemHistoryResponse | { error?: string };
@@ -261,31 +261,54 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
     }
 
     const historyPayload = payload as ItemHistoryResponse;
-    const events = historyPayload.leases.flatMap((lease) => {
-      const leasedEvent: ItemHistoryEvent = {
-        leaseId: lease.id,
-        type: "LEASED",
-        date: lease.leasedAt,
-        student: lease.student,
-      };
+    setHistoryEvents(historyPayload.events);
+    setHistoryLoading(false);
+  }
 
-      if (!lease.returnedAt) {
-        return [leasedEvent];
-      }
+  async function handleSubmitItemComment() {
+    if (!historyItemId) {
+      return;
+    }
 
-      const returnedEvent: ItemHistoryEvent = {
-        leaseId: lease.id,
-        type: "RETURNED",
-        date: lease.returnedAt,
-        student: lease.student,
-      };
+    const trimmedComment = commentBody.trim();
+    if (!trimmedComment) {
+      setCommentError("Kommentar ist erforderlich");
+      return;
+    }
 
-      return [leasedEvent, returnedEvent];
+    setCommentSubmitting(true);
+    setCommentError(null);
+
+    const body: Record<string, unknown> = { comment: trimmedComment };
+    if (commentStatus) {
+      body.status = commentStatus;
+    }
+
+    const response = await fetch(`/api/items/${encodeURIComponent(historyItemId)}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
 
-    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    setHistoryEvents(events);
-    setHistoryLoading(false);
+    const payload = (await response.json()) as { comment?: unknown; item?: { id: string; status: ItemStatus } | null; error?: string };
+    if (!response.ok) {
+      setCommentError(payload.error ?? "Kommentar konnte nicht gespeichert werden");
+      setCommentSubmitting(false);
+      return;
+    }
+
+    // Sync item status in the list if it was changed atomically with the comment
+    if (payload.item) {
+      const updatedItem = payload.item;
+      setItems((prev) =>
+        prev.map((item) => (item.id === updatedItem.id ? { ...item, status: updatedItem.status } : item)),
+      );
+    }
+
+    setCommentBody("");
+    setCommentStatus("");
+    await handleOpenItemHistory(historyItemId);
+    setCommentSubmitting(false);
   }
 
   function handleCloseItemHistory() {
@@ -294,6 +317,18 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
     setHistoryError(null);
     setHistoryItemId(null);
     setHistoryEvents([]);
+    setCommentBody("");
+    setCommentError(null);
+    setCommentSubmitting(false);
+    setCommentStatus("");
+  }
+
+  function formatItemHistoryStudent(student: ItemHistoryLease["student"] | null) {
+    if (!student) {
+      return "-";
+    }
+
+    return `${student.lastname}, ${student.firstname}${student.idOld ? ` (ID: ${student.idOld})` : ""}`;
   }
 
   return (
@@ -433,7 +468,7 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
                     {canManage ? (
                       <select
                         value={item.status}
-                        onChange={(e) => void handleUpdateItemStatus(item.id, e.target.value as ItemStatus)}
+                        onChange={(e) => handleStatusChangeRequested(item.id, e.target.value as ItemStatus)}
                         disabled={updatingItemId === item.id}
                         className="rounded border border-black/20 bg-white px-2 py-1 text-xs"
                         aria-label={`Status für Item ${item.id} ändern`}
@@ -525,7 +560,7 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
 
       {historyOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-lg bg-white p-4 shadow-lg">
+          <div className="w-full max-w-3xl rounded-lg bg-white p-4 shadow-lg">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="text-lg font-semibold text-[#131820]">Item-Verlauf</h3>
@@ -536,12 +571,52 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
               </Button>
             </div>
 
+            {canManage ? (
+              <div className="mt-3 space-y-3 rounded border border-black/10 p-3">
+                <label htmlFor="item-comment-body" className="block text-sm font-medium text-[#131820]">
+                  Kommentar hinzufügen
+                </label>
+                <textarea
+                  id="item-comment-body"
+                  value={commentBody}
+                  onChange={(event) => setCommentBody(event.target.value)}
+                  placeholder="Kommentar eingeben"
+                  rows={3}
+                  autoFocus
+                  className="w-full rounded border border-black/20 px-3 py-2 text-sm outline-none focus:border-[#006b2d]"
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <label htmlFor="comment-status-select" className="text-xs text-[#4b5563]">
+                      Status ändern (optional):
+                    </label>
+                    <select
+                      id="comment-status-select"
+                      value={commentStatus}
+                      onChange={(e) => setCommentStatus(e.target.value as ItemStatus | "")}
+                      className="rounded border border-black/20 bg-white px-2 py-1 text-xs"
+                    >
+                      <option value="">— kein Statuswechsel —</option>
+                      {ITEM_STATUSES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button size="sm" onClick={() => void handleSubmitItemComment()} disabled={commentSubmitting || historyLoading}>
+                    Kommentar speichern
+                  </Button>
+                </div>
+                {commentError ? <p className="text-sm text-red-600">{commentError}</p> : null}
+              </div>
+            ) : null}
+
             <div className="mt-3 max-h-96 overflow-auto rounded border border-black/10">
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-[#f2f4f8] text-left">
                   <tr>
                     <th className="px-3 py-2">Datum</th>
                     <th className="px-3 py-2">Aktion</th>
+                    <th className="px-3 py-2">Beschreibung</th>
                     <th className="px-3 py-2">Schüler</th>
                     <th className="px-3 py-2">Klasse</th>
                   </tr>
@@ -549,38 +624,40 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
                 <tbody>
                   {historyLoading ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-4 text-center text-[#364152]">
+                      <td colSpan={5} className="px-3 py-4 text-center text-[#364152]">
                         Verlauf wird geladen...
                       </td>
                     </tr>
                   ) : historyError ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-4 text-center text-red-600">
+                      <td colSpan={5} className="px-3 py-4 text-center text-red-600">
                         {historyError}
                       </td>
                     </tr>
                   ) : historyEvents.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-4 text-center text-[#364152]">
-                        Keine Ausleih- oder Rückgabehistorie vorhanden.
+                      <td colSpan={5} className="px-3 py-4 text-center text-[#364152]">
+                        Keine Ausleih-, Rückgabe- oder Kommentarhistorie vorhanden.
                       </td>
                     </tr>
                   ) : (
                     historyEvents.map((event) => (
-                      <tr key={`${event.leaseId}-${event.type}-${event.date}`} className="border-t border-black/10">
+                      <tr key={event.id} className="border-t border-black/10">
                         <td className="px-3 py-2">{new Date(event.date).toLocaleString("de-DE")}</td>
                         <td className="px-3 py-2">
                           {event.type === "LEASED" ? (
                             <span className="font-medium text-amber-700">Ausleihe</span>
-                          ) : (
+                          ) : event.type === "RETURNED" ? (
                             <span className="font-medium text-green-700">Rückgabe</span>
+                          ) : (
+                            <span className="font-medium text-slate-700">Kommentar</span>
                           )}
                         </td>
                         <td className="px-3 py-2">
-                          {event.student.lastname}, {event.student.firstname}
-                          {event.student.idOld ? ` (ID: ${event.student.idOld})` : ""}
+                          {event.type === "COMMENT" ? event.body : event.type === "LEASED" ? "Ausleihe" : "Rückgabe"}
                         </td>
-                        <td className="px-3 py-2">{event.student.course}</td>
+                        <td className="px-3 py-2">{formatItemHistoryStudent(event.student ?? null)}</td>
+                        <td className="px-3 py-2">{event.student?.course ?? "-"}</td>
                       </tr>
                     ))
                   )}

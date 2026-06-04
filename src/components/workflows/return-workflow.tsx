@@ -49,6 +49,10 @@ type ReturnResponse = {
   error?: string;
 };
 
+type ItemStatus = "NEW" | "USED" | "DAMAGED" | "REMOVED";
+
+const ITEM_STATUSES: ItemStatus[] = ["NEW", "USED", "DAMAGED", "REMOVED"];
+
 type Props = {
   initialStudentId?: number | null;
   resetSelectionOnMount?: boolean;
@@ -65,6 +69,11 @@ export function ReturnWorkflow({ initialStudentId = null, resetSelectionOnMount 
   const [success, setSuccess] = useState<string | null>(null);
   const [result, setResult] = useState<ReturnResponse | null>(null);
   const [selectedStudentSnapshot, setSelectedStudentSnapshot] = useState<SelectedStudentSnapshot | null>(null);
+  const [returnComment, setReturnComment] = useState("");
+  const [returnCommentStatus, setReturnCommentStatus] = useState<ItemStatus | "">("");
+  const [returnCommentSubmitting, setReturnCommentSubmitting] = useState(false);
+  const [returnCommentError, setReturnCommentError] = useState<string | null>(null);
+  const [returnCommentSaved, setReturnCommentSaved] = useState(false);
 
   useEffect(() => {
     if (!isSelectionHydrated || !resetSelectionOnMount) {
@@ -147,6 +156,10 @@ export function ReturnWorkflow({ initialStudentId = null, resetSelectionOnMount 
     setIsSubmitting(true);
     setError(null);
     setSuccess(null);
+    setReturnComment("");
+    setReturnCommentStatus("");
+    setReturnCommentSaved(false);
+    setReturnCommentError(null);
 
     try {
       const response = await fetch(`/api/items/${encodeURIComponent(normalized)}/return`, {
@@ -191,6 +204,43 @@ export function ReturnWorkflow({ initialStudentId = null, resetSelectionOnMount 
     await submitReturnByItemId(normalized, true);
   }
 
+  async function handleSubmitReturnComment() {
+    if (!result?.returnedItem?.id) return;
+    const trimmed = returnComment.trim();
+    if (!trimmed) {
+      setReturnCommentError("Kommentar ist erforderlich");
+      return;
+    }
+
+    setReturnCommentSubmitting(true);
+    setReturnCommentError(null);
+
+    const body: Record<string, unknown> = { comment: trimmed };
+    if (result.student?.id) {
+      body.studentId = result.student.id;
+    }
+    if (returnCommentStatus) {
+      body.status = returnCommentStatus;
+    }
+
+    const response = await fetch(
+      `/api/items/${encodeURIComponent(result.returnedItem.id)}/comments`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+    );
+
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setReturnCommentError(payload.error ?? "Kommentar konnte nicht gespeichert werden");
+      setReturnCommentSubmitting(false);
+      return;
+    }
+
+    setReturnCommentSaved(true);
+    setReturnComment("");
+    setReturnCommentStatus("");
+    setReturnCommentSubmitting(false);
+  }
+
   const selectedSnapshotForCurrentId =
     selectedStudentId && selectedStudentSnapshot?.studentId === selectedStudentId ? selectedStudentSnapshot : null;
   const displayStudent = result?.student ?? selectedSnapshotForCurrentId?.student ?? null;
@@ -232,6 +282,55 @@ export function ReturnWorkflow({ initialStudentId = null, resetSelectionOnMount 
 
       {success ? <p className="text-sm font-medium text-green-700">{success}</p> : null}
       {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+
+      {result?.returnedItem && !returnCommentSaved ? (
+        <div className="space-y-3 rounded-lg border border-black/10 bg-white p-4">
+          <h3 className="text-sm font-semibold text-[#131820]">
+            Kommentar zur Rückgabe: {result.returnedItem.id}
+          </h3>
+          <textarea
+            value={returnComment}
+            onChange={(e) => setReturnComment(e.target.value)}
+            placeholder="Optionaler Kommentar zur Rückgabe…"
+            rows={3}
+            className="w-full rounded border border-black/20 px-3 py-2 text-sm outline-none focus:border-[#006b2d]"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <label className="text-xs text-[#4b5563]">Status ändern (optional):</label>
+              <select
+                value={returnCommentStatus}
+                onChange={(e) => setReturnCommentStatus(e.target.value as ItemStatus | "")}
+                className="rounded border border-black/20 bg-white px-2 py-1 text-xs"
+                aria-label="Status des Items ändern"
+              >
+                <option value="">— kein Statuswechsel —</option>
+                {ITEM_STATUSES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setReturnCommentSaved(true)}
+                className="rounded border border-black/20 px-3 py-1 text-xs hover:bg-black/5"
+              >
+                Überspringen
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSubmitReturnComment()}
+                disabled={returnCommentSubmitting}
+                className="rounded bg-[#006b2d] px-3 py-1 text-xs text-white hover:bg-[#005a25] disabled:opacity-60"
+              >
+                Kommentar speichern
+              </button>
+            </div>
+          </div>
+          {returnCommentError ? <p className="text-sm text-red-600">{returnCommentError}</p> : null}
+        </div>
+      ) : null}
 
       {isLoadingSelectedStudent && !displayStudent ? <p className="text-sm text-[#364152]">Schülerdaten werden geladen...</p> : null}
 

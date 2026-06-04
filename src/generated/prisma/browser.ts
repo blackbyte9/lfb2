@@ -63,6 +63,11 @@ export type Item = Prisma.ItemModel
  */
 export type Lease = Prisma.LeaseModel
 /**
+ * Model Comment
+ * 
+ */
+export type Comment = Prisma.CommentModel
+/**
  * Model Test
  * 
  */

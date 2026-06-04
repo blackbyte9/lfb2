@@ -4,32 +4,37 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
-type ItemHistoryLease = {
+type ItemHistoryStudent = {
   id: number;
-  leasedAt: string;
-  returnedAt: string | null;
-  student: {
-    id: number;
-    idOld: string | null;
-    firstname: string;
-    lastname: string;
-    course: string;
-  };
+  idOld: string | null;
+  firstname: string;
+  lastname: string;
+  course: string;
 };
+
+type ItemHistoryEvent =
+  | {
+      id: string;
+      type: "LEASED" | "RETURNED";
+      date: string;
+      leaseId: number;
+      student: ItemHistoryStudent;
+    }
+  | {
+      id: string;
+      type: "COMMENT";
+      date: string;
+      commentId: number;
+      body: string;
+      student: ItemHistoryStudent | null;
+    };
 
 type ItemHistoryResponse = {
   item: {
     id: string;
     status: string;
   };
-  leases: ItemHistoryLease[];
-};
-
-type ItemHistoryEvent = {
-  leaseId: number;
-  type: "LEASED" | "RETURNED";
-  date: string;
-  student: ItemHistoryLease["student"];
+  events: ItemHistoryEvent[];
 };
 
 type Props = {
@@ -41,6 +46,26 @@ type Props = {
   className?: string;
 };
 
+function formatStudent(student: ItemHistoryStudent | null) {
+  if (!student) {
+    return "-";
+  }
+
+  return `${student.lastname}, ${student.firstname}${student.idOld ? ` (ID: ${student.idOld})` : ""}`;
+}
+
+function eventLabel(event: ItemHistoryEvent) {
+  if (event.type === "LEASED") {
+    return <span className="font-medium text-amber-700">Ausleihe</span>;
+  }
+
+  if (event.type === "RETURNED") {
+    return <span className="font-medium text-green-700">Rückgabe</span>;
+  }
+
+  return <span className="font-medium text-slate-700">Kommentar</span>;
+}
+
 export function ItemHistoryButton({
   itemId,
   mode = "inline",
@@ -51,13 +76,17 @@ export function ItemHistoryButton({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [commentError, setCommentError] = useState<string | null>(null);
   const [events, setEvents] = useState<ItemHistoryEvent[]>([]);
+  const [commentBody, setCommentBody] = useState("");
 
-  async function openHistory() {
+  async function loadHistory() {
     setOpen(true);
     setLoading(true);
     setError(null);
+    setCommentError(null);
     setEvents([]);
 
     const response = await fetch(`/api/items/${encodeURIComponent(itemId)}/history`);
@@ -70,51 +99,59 @@ export function ItemHistoryButton({
     }
 
     const historyPayload = payload as ItemHistoryResponse;
-    const historyEvents = historyPayload.leases.flatMap((lease) => {
-      const leasedEvent: ItemHistoryEvent = {
-        leaseId: lease.id,
-        type: "LEASED",
-        date: lease.leasedAt,
-        student: lease.student,
-      };
+    setEvents(historyPayload.events);
+    setLoading(false);
+  }
 
-      if (!lease.returnedAt) {
-        return [leasedEvent];
-      }
+  async function submitComment() {
+    const trimmedComment = commentBody.trim();
+    if (!trimmedComment) {
+      setCommentError("Kommentar ist erforderlich");
+      return;
+    }
 
-      const returnedEvent: ItemHistoryEvent = {
-        leaseId: lease.id,
-        type: "RETURNED",
-        date: lease.returnedAt,
-        student: lease.student,
-      };
+    setSubmittingComment(true);
+    setCommentError(null);
 
-      return [leasedEvent, returnedEvent];
+    const response = await fetch(`/api/items/${encodeURIComponent(itemId)}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment: trimmedComment }),
     });
 
-    historyEvents.sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
-    setEvents(historyEvents);
-    setLoading(false);
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setCommentError(payload.error ?? "Kommentar konnte nicht gespeichert werden");
+      setSubmittingComment(false);
+      return;
+    }
+
+    setCommentBody("");
+    await loadHistory();
+    setSubmittingComment(false);
   }
 
   function closeHistory() {
     setOpen(false);
     setLoading(false);
+    setSubmittingComment(false);
     setError(null);
+    setCommentError(null);
     setEvents([]);
+    setCommentBody("");
   }
 
   return (
     <>
       {mode === "button" ? (
-        <Button size={size} variant={variant} onClick={() => void openHistory()}>
+        <Button size={size} variant={variant} onClick={() => void loadHistory()}>
           {label ?? "Verlauf"}
         </Button>
       ) : (
         <button
           type="button"
           className={className ?? "font-mono text-xs text-[#006b2d] hover:underline"}
-          onClick={() => void openHistory()}
+          onClick={() => void loadHistory()}
         >
           {label ?? itemId}
         </button>
@@ -122,7 +159,7 @@ export function ItemHistoryButton({
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-lg bg-white p-4 shadow-lg">
+          <div className="w-full max-w-3xl rounded-lg bg-white p-4 shadow-lg">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="text-lg font-semibold text-[#131820]">Item-Verlauf</h3>
@@ -133,12 +170,37 @@ export function ItemHistoryButton({
               </Button>
             </div>
 
+            <div className="mt-3 space-y-3 rounded border border-black/10 p-3">
+              <label htmlFor={`item-comment-${itemId}`} className="block text-sm font-medium text-[#131820]">
+                Kommentar hinzufügen
+              </label>
+              <textarea
+                id={`item-comment-${itemId}`}
+                value={commentBody}
+                onChange={(event) => setCommentBody(event.target.value)}
+                placeholder="Kommentar eingeben"
+                rows={3}
+                autoFocus
+                className="w-full rounded border border-black/20 px-3 py-2 text-sm outline-none focus:border-[#006b2d]"
+              />
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-[#4b5563]">
+                  Wenn das Item aktuell ausgeliehen ist, wird der Kommentar automatisch dem Schüler zugeordnet.
+                </p>
+                <Button size="sm" onClick={() => void submitComment()} disabled={submittingComment || loading}>
+                  Kommentar speichern
+                </Button>
+              </div>
+              {commentError ? <p className="text-sm text-red-600">{commentError}</p> : null}
+            </div>
+
             <div className="mt-3 max-h-96 overflow-auto rounded border border-black/10">
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-[#f2f4f8] text-left">
                   <tr>
                     <th className="px-3 py-2">Datum</th>
                     <th className="px-3 py-2">Aktion</th>
+                    <th className="px-3 py-2">Beschreibung</th>
                     <th className="px-3 py-2">Schüler</th>
                     <th className="px-3 py-2">Klasse</th>
                   </tr>
@@ -146,38 +208,32 @@ export function ItemHistoryButton({
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-4 text-center text-[#364152]">
+                      <td colSpan={5} className="px-3 py-4 text-center text-[#364152]">
                         Verlauf wird geladen...
                       </td>
                     </tr>
                   ) : error ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-4 text-center text-red-600">
+                      <td colSpan={5} className="px-3 py-4 text-center text-red-600">
                         {error}
                       </td>
                     </tr>
                   ) : events.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-4 text-center text-[#364152]">
-                        Keine Ausleih- oder Rückgabehistorie vorhanden.
+                      <td colSpan={5} className="px-3 py-4 text-center text-[#364152]">
+                        Keine Ausleih-, Rückgabe- oder Kommentarhistorie vorhanden.
                       </td>
                     </tr>
                   ) : (
                     events.map((event) => (
-                      <tr key={`${event.leaseId}-${event.type}-${event.date}`} className="border-t border-black/10">
+                      <tr key={event.id} className="border-t border-black/10">
                         <td className="px-3 py-2">{new Date(event.date).toLocaleString("de-DE")}</td>
+                        <td className="px-3 py-2">{eventLabel(event)}</td>
                         <td className="px-3 py-2">
-                          {event.type === "LEASED" ? (
-                            <span className="font-medium text-amber-700">Ausleihe</span>
-                          ) : (
-                            <span className="font-medium text-green-700">Rückgabe</span>
-                          )}
+                          {event.type === "COMMENT" ? event.body : event.type === "LEASED" ? "Ausleihe" : "Rückgabe"}
                         </td>
-                        <td className="px-3 py-2">
-                          {event.student.lastname}, {event.student.firstname}
-                          {event.student.idOld ? ` (ID: ${event.student.idOld})` : ""}
-                        </td>
-                        <td className="px-3 py-2">{event.student.course}</td>
+                        <td className="px-3 py-2">{formatStudent(event.student ?? null)}</td>
+                        <td className="px-3 py-2">{event.student?.course ?? "-"}</td>
                       </tr>
                     ))
                   )}

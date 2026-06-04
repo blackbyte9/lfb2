@@ -53,6 +53,14 @@ export const itemUpdateSchema = z.object({
   bookId: z.number().int().positive("Ungültige Buch-ID").optional(),
 }).strict();
 
+export const itemCommentCreateSchema = z
+  .object({
+    comment: z.string().trim().min(1, "Kommentar ist erforderlich").max(1000, "Kommentar ist zu lang"),
+    studentId: z.number().int().positive().optional(),
+    status: itemStatusSchema.optional(),
+  })
+  .strict();
+
 export const defaultItemImportEntrySchema = z.object({
   id: itemIdSchema,
   status: itemStatusSchema,
@@ -68,3 +76,4 @@ export type BookUpdateInput = z.infer<typeof bookUpdateSchema>;
 export type BookImportEntryInput = z.infer<typeof bookImportEntrySchema>;
 export type ItemCreateInput = z.infer<typeof itemCreateSchema>;
 export type ItemUpdateInput = z.infer<typeof itemUpdateSchema>;
+export type ItemCommentCreateInput = z.infer<typeof itemCommentCreateSchema>;

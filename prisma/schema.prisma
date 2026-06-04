@@ -37,6 +37,7 @@ model Student {
   updatedAt    DateTime             @updatedAt
   gradeHistory StudentGradeHistory[]
   leases       Lease[]
+  comments     Comment[]
 
   @@index([lastname, firstname])
   @@index([course])
@@ -139,6 +140,7 @@ model Item {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   leases    Lease[]
+  comments  Comment[]
 
   @@index([bookId])
 }
@@ -159,6 +161,20 @@ model Lease {
   @@index([studentId])
   @@index([itemId])
   @@index([active])
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  itemId    String
+  studentId  Int?
+  body      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  student   Student?  @relation(fields: [studentId], references: [id], onDelete: SetNull)
+
+  @@index([itemId, createdAt])
+  @@index([studentId, createdAt])
 }
 
 model Test {
