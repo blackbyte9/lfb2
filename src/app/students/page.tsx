@@ -39,6 +39,7 @@ export default async function StudentsPage() {
   }));
 
   const canManage = canAccess;
+  const canCreate = session?.user.role === "ADMIN";
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 px-6 py-8">
@@ -46,7 +47,7 @@ export default async function StudentsPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-[#131820]">Schüler</h1>
         </div>
-        <StudentsManager initialStudents={tableRows} canManage={canManage} />
+        <StudentsManager initialStudents={tableRows} canManage={canManage} canCreate={canCreate} />
       </div>
     </main>
   );
