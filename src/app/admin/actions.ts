@@ -8,6 +8,46 @@ import { prisma } from "@/lib/prisma";
 
 const USER_TYPES = ["GUEST", "USER", "ADMIN"] as const;
 
+export async function createUserAction(
+  _prevState: { error: string } | null,
+  formData: FormData,
+): Promise<{ error: string } | null> {
+  await requireAdmin();
+
+  const name = readText(formData, "name");
+  const email = readText(formData, "email");
+  const username = readText(formData, "username");
+  const password = readText(formData, "password");
+  const role = readText(formData, "role");
+
+  if (!name) return { error: "Name ist erforderlich." };
+  if (!email) return { error: "E-Mail ist erforderlich." };
+  if (password.length < 8) return { error: "Das Passwort muss mindestens 8 Zeichen lang sein." };
+
+  const nextRole = USER_TYPES.includes(role as (typeof USER_TYPES)[number])
+    ? (role as (typeof USER_TYPES)[number])
+    : "GUEST";
+
+  try {
+    await auth.api.createUser({
+      body: {
+        name,
+        email,
+        password,
+        role: nextRole,
+        data: username ? { username, displayUsername: username } : undefined,
+      },
+      headers: await headers(),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { error: `Fehler beim Anlegen: ${message}` };
+  }
+
+  revalidatePath("/admin");
+  return null;
+}
+
 function readText(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";

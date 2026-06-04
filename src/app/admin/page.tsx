@@ -5,12 +5,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AdminUsersTable } from "@/components/managers/admin-users-table";
 import { AdminImportsPanel } from "@/components/managers/admin-imports-panel";
+import { AdminCreateUserForm } from "@/components/generic/admin-create-user-form";
 
 const ADMIN_ERRORS: Record<string, string> = {
   "invalid-role": "Die Rolle konnte nicht aktualisiert werden. Bitte wähle eine gültige Rolle.",
   "invalid-password": "Das Passwort muss mindestens 8 Zeichen lang sein.",
   "invalid-user-delete": "Der Benutzer konnte nicht gelöscht werden.",
   "cannot-delete-self": "Du kannst deinen eigenen Benutzer nicht löschen.",
+  "invalid-create-user": "Der Benutzer konnte nicht angelegt werden. Bitte überprüfe die Eingaben.",
 };
 
 export default async function AdminPage({
@@ -93,8 +95,11 @@ export default async function AdminPage({
         ) : null}
 
         {activeTab === "users" ? (
-          <div className="rounded-lg border border-black/10">
-            <AdminUsersTable users={tableRows} />
+          <div className="space-y-3">
+            <AdminCreateUserForm />
+            <div className="rounded-lg border border-black/10">
+              <AdminUsersTable users={tableRows} />
+            </div>
           </div>
         ) : (
           <div className="rounded-lg border border-black/10 p-4">
