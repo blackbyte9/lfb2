@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { BooksManager } from "@/components/books/books-manager";
+import { BooksManager } from "@/components/managers/books-manager";
 
 export default async function BooksPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -14,6 +14,7 @@ export default async function BooksPage() {
       isbn: true,
       name: true,
       createdAt: true,
+      _count: { select: { items: true } },
       items: {
         where: { status: { not: "REMOVED" } },
         select: {
@@ -29,6 +30,7 @@ export default async function BooksPage() {
     isbn: book.isbn,
     name: book.name,
     itemCount: book.items.length,
+    linkedItemCount: book._count.items,
     leasedCount: book.items.filter((item) => item._count.leases > 0).length,
     createdAt: book.createdAt.toISOString(),
   }));

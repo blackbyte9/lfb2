@@ -16,6 +16,7 @@ export type ItemRow = {
   status: ItemStatus;
   bookId: number;
   isLeased: boolean;
+  hasAnyLeases: boolean;
   leasedStudentId: number | null;
   leasedStudentName: string | null;
   createdAt: string;
@@ -477,9 +478,11 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
                             Zurückgeben
                           </Button>
                         )}
-                        <Button size="xs" variant="outline" onClick={() => void handleDeleteItem(item.id)}>
-                          Löschen
-                        </Button>
+                        {!item.hasAnyLeases ? (
+                          <Button size="xs" variant="outline" onClick={() => void handleDeleteItem(item.id)}>
+                            Löschen
+                          </Button>
+                        ) : null}
                       </div>
                     </TableCell>
                   )}

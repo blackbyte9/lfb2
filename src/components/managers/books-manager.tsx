@@ -15,6 +15,7 @@ export type BookRow = {
   isbn: string;
   name: string;
   itemCount: number;
+  linkedItemCount: number;
   leasedCount: number;
   createdAt: string;
 };
@@ -348,6 +349,7 @@ export function BooksManager({ initialBooks, canManage }: Props) {
                   isEditing={editingId === book.id}
                   isDeleting={confirmDeleteId === book.id}
                   canManage={canManage}
+                  canDelete={book.linkedItemCount === 0}
                   onRowClick={editingId === book.id || confirmDeleteId === book.id ? undefined : () => router.push(`/books/${book.id}`)}
                   rowClassName={editingId === book.id || confirmDeleteId === book.id ? "" : "cursor-pointer"}
                   actionsColumnClassName="w-52"

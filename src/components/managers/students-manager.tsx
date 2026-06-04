@@ -6,7 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
-import { StudentHistoryButton } from "@/components/students/student-history-button";
+import { StudentHistoryButton } from "@/components/buttons/student-history-button";
 
 type StudentStatus = "ACTIVE" | "INACTIVE" | "SPECIAL";
 

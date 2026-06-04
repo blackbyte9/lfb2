@@ -1,6 +1,6 @@
 "use client";
 
-import { StudentHistoryButton } from "@/components/students/student-history-button";
+import { StudentHistoryButton } from "@/components/buttons/student-history-button";
 
 type StudentHeaderInfo = {
   id: number;

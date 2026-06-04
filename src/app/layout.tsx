@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { SiteHeader } from "@/components/layout/site-header";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { StudentSelectionProvider } from "@/components/providers/student-selection-provider";
+import { SiteHeader } from "@/components/generic/site-header";
+import { SiteFooter } from "@/components/generic/site-footer";
+import { StudentSelectionProvider } from "@/components/generic/student-selection-provider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 

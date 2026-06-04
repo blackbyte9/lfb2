@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { parseStudentIdValue } from "@/lib/student-selection";
 import { canAccessStudents } from "@/lib/students-access";
-import { ReturnWorkflow } from "@/components/returns/return-workflow";
+import { ReturnWorkflow } from "@/components/workflows/return-workflow";
 
 type Props = {
   params: Promise<{ id: string }>;

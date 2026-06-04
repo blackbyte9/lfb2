@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 
+import { ItemHistoryButton } from "@/components/buttons/item-history-button";
+
 export type ActiveLeaseTableRowData = {
   id: number;
   leasedAt: string;
@@ -17,11 +19,10 @@ export type ActiveLeaseTableRowData = {
 
 type ActiveLeaseTableRowProps = {
   lease: ActiveLeaseTableRowData;
-  onOpenItemHistory: (itemId: string) => void;
   actionCell?: ReactNode;
 };
 
-export function ActiveLeaseTableRow({ lease, onOpenItemHistory, actionCell }: ActiveLeaseTableRowProps) {
+export function ActiveLeaseTableRow({ lease, actionCell }: ActiveLeaseTableRowProps) {
   return (
     <tr>
       <td className="px-3 py-2">
@@ -30,13 +31,7 @@ export function ActiveLeaseTableRow({ lease, onOpenItemHistory, actionCell }: Ac
         </Link>
       </td>
       <td className="px-3 py-2">
-        <button
-          type="button"
-          className="font-mono text-xs text-[#006b2d] hover:underline"
-          onClick={() => onOpenItemHistory(lease.item.id)}
-        >
-          {lease.item.id}
-        </button>
+        <ItemHistoryButton itemId={lease.item.id} mode="inline" label={lease.item.id} />
       </td>
       <td className="px-3 py-2">{new Date(lease.leasedAt).toLocaleDateString("de-DE")}</td>
       {actionCell ? <td className="px-3 py-2 text-right">{actionCell}</td> : null}

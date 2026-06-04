@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canAccessStudents } from "@/lib/students-access";
-import { StudentsManager } from "@/components/students/students-manager";
+import { StudentsManager } from "@/components/managers/students-manager";
 
 export default async function StudentsPage() {
   const session = await auth.api.getSession({ headers: await headers() });

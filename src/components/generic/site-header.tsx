@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { canAccessStudents } from "@/lib/students-access";
 import { logoutAction } from "@/app/auth/actions";
-import { SiteNavLinks } from "@/components/layout/site-nav-links";
+import { SiteNavLinks } from "@/components/generic/site-nav-links";
 
 export async function SiteHeader() {
   const session = await auth.api.getSession({ headers: await headers() });

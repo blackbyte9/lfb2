@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { parseStudentIdValue } from "@/lib/student-selection";
 import { canAccessStudents } from "@/lib/students-access";
-import { LeaseWorkflow } from "@/components/leases/lease-workflow";
+import { LeaseWorkflow } from "@/components/workflows/lease-workflow";
 
 type Props = {
   params: Promise<{ id: string }>;

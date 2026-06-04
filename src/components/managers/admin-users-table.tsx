@@ -1,10 +1,10 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { AdminPasswordResetForm } from "@/components/admin/admin-password-reset-form";
-import { AdminUserSummaryCell } from "@/components/admin/admin-user-summary-cell";
+import { AdminPasswordResetForm } from "@/components/generic/admin-password-reset-form";
+import { AdminUserSummaryCell } from "@/components/rows/admin-user-summary-cell";
 import { deleteUserAction } from "@/app/admin/actions";
-import { RoleSelect } from "@/components/admin/role-select";
+import { RoleSelect } from "@/components/generic/role-select";
 import { DataTable } from "@/components/ui/data-table";
 
 export type AdminUserRow = {

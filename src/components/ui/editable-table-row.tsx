@@ -7,6 +7,7 @@ type EditableTableRowProps = {
   isEditing: boolean;
   isDeleting: boolean;
   canManage: boolean;
+  canDelete?: boolean;
   onRowClick?: () => void;
   rowClassName?: string;
   actionsColumnClassName?: string;
@@ -24,6 +25,7 @@ export function EditableTableRow({
   isEditing,
   isDeleting,
   canManage,
+  canDelete = true,
   onRowClick,
   rowClassName = "",
   actionsColumnClassName = "",
@@ -99,16 +101,18 @@ export function EditableTableRow({
               >
                 Bearbeiten
               </Button>
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onStartDelete();
-                }}
-              >
-                Löschen
-              </Button>
+              {canDelete ? (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStartDelete();
+                  }}
+                >
+                  Löschen
+                </Button>
+              ) : null}
             </div>
           )}
         </TableCell>

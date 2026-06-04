@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 
-import { BookItemsManager, type BookOption, type ItemRow } from "@/components/books/book-items-manager";
+import { BookItemsManager, type BookOption, type ItemRow } from "@/components/managers/book-items-manager";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -44,6 +44,7 @@ export default async function BookItemsPage({ params, searchParams }: Props) {
       bookId: true,
       createdAt: true,
       updatedAt: true,
+      _count: { select: { leases: true } },
       leases: {
         where: { active: true },
         select: { studentId: true, student: { select: { firstname: true, lastname: true } } },
@@ -61,6 +62,7 @@ export default async function BookItemsPage({ params, searchParams }: Props) {
     status: item.status,
     bookId: item.bookId,
     isLeased: item.leases.length > 0,
+    hasAnyLeases: item._count.leases > 0,
     leasedStudentId: item.leases[0]?.studentId ?? null,
     leasedStudentName: item.leases[0]
       ? `${item.leases[0].student.lastname}, ${item.leases[0].student.firstname}`

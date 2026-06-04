@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
       bookId: true,
       createdAt: true,
       updatedAt: true,
+      _count: { select: { leases: true } },
       leases: {
         where: { active: true },
         select: { studentId: true, student: { select: { firstname: true, lastname: true } } },
@@ -30,18 +31,23 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json(
-    items.map((item) => ({
-      id: item.id,
-      status: item.status,
-      bookId: item.bookId,
-      isLeased: item.leases.length > 0,
-      leasedStudentId: item.leases[0]?.studentId ?? null,
-      leasedStudentName: item.leases[0]
-        ? `${item.leases[0].student.lastname}, ${item.leases[0].student.firstname}`
-        : null,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-    }))
+    items.map((item) => {
+      const leaseCount = item._count?.leases ?? 0;
+
+      return {
+        id: item.id,
+        status: item.status,
+        bookId: item.bookId,
+        isLeased: item.leases.length > 0,
+        hasAnyLeases: leaseCount > 0,
+        leasedStudentId: item.leases[0]?.studentId ?? null,
+        leasedStudentName: item.leases[0]
+          ? `${item.leases[0].student.lastname}, ${item.leases[0].student.firstname}`
+          : null,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      };
+    })
   );
 }
 
@@ -74,7 +80,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ ...item, isLeased: false }, { status: 201 });
+    return NextResponse.json({ ...item, isLeased: false, hasAnyLeases: false }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Item konnte nicht erstellt werden" }, { status: 409 });
   }

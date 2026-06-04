@@ -11,6 +11,7 @@ export async function GET() {
       isbn: true,
       name: true,
       createdAt: true,
+      _count: { select: { items: true } },
       items: {
         where: { status: { not: "REMOVED" } },
         select: {
@@ -22,14 +23,19 @@ export async function GET() {
   });
 
   return NextResponse.json(
-    books.map((book) => ({
-      id: book.id,
-      isbn: book.isbn,
-      name: book.name,
-      createdAt: book.createdAt,
-      itemCount: book.items.length,
-      leasedCount: book.items.filter((item) => item._count.leases > 0).length,
-    })),
+    books.map((book) => {
+      const linkedItemCount = (book as { _count?: { items?: number } })._count?.items ?? book.items.length;
+
+      return {
+        id: book.id,
+        isbn: book.isbn,
+        name: book.name,
+        createdAt: book.createdAt,
+        itemCount: book.items.length,
+        linkedItemCount,
+        leasedCount: book.items.filter((item) => item._count.leases > 0).length,
+      };
+    }),
   );
 }
 
@@ -51,7 +57,7 @@ export async function POST(request: NextRequest) {
       data: parsed.data,
       select: { id: true, isbn: true, name: true, createdAt: true },
     });
-    return NextResponse.json({ ...book, itemCount: 0, leasedCount: 0 }, { status: 201 });
+    return NextResponse.json({ ...book, itemCount: 0, linkedItemCount: 0, leasedCount: 0 }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "ISBN bereits vorhanden" }, { status: 409 });
   }

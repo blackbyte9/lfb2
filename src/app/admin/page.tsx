@@ -3,8 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { AdminUsersTable } from "@/components/admin/admin-users-table";
-import { AdminImportsPanel } from "@/components/admin/admin-imports-panel";
+import { AdminUsersTable } from "@/components/managers/admin-users-table";
+import { AdminImportsPanel } from "@/components/managers/admin-imports-panel";
 
 const ADMIN_ERRORS: Record<string, string> = {
   "invalid-role": "Die Rolle konnte nicht aktualisiert werden. Bitte wähle eine gültige Rolle.",

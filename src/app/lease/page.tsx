@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { parseStudentIdValue, STUDENT_SELECTION_COOKIE_KEY } from "@/lib/student-selection";
 import { canAccessStudents } from "@/lib/students-access";
-import { LeaseWorkflow } from "@/components/leases/lease-workflow";
+import { LeaseWorkflow } from "@/components/workflows/lease-workflow";
 
 export default async function LeasePage() {
   const session = await auth.api.getSession({ headers: await headers() });

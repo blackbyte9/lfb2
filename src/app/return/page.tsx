@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { parseStudentIdValue, STUDENT_SELECTION_COOKIE_KEY } from "@/lib/student-selection";
 import { canAccessStudents } from "@/lib/students-access";
-import { ReturnWorkflow } from "@/components/returns/return-workflow";
+import { ReturnWorkflow } from "@/components/workflows/return-workflow";
 
 export default async function ReturnPage() {
   const session = await auth.api.getSession({ headers: await headers() });
