@@ -209,16 +209,22 @@ test("books and items are publicly readable with availability information", asyn
     await expect(page.getByRole("heading", { name: "Bücher" })).toBeVisible();
     await expect(page.getByRole("button", { name: "+ Buch hinzufügen" })).toHaveCount(0);
 
+    if (!fixture) {
+      throw new Error("Fixture was not initialized");
+    }
+
+    const currentFixture = fixture;
+
     const booksResponse = await page.request.get("/api/books");
     expect(booksResponse.ok()).toBeTruthy();
     const booksData = (await booksResponse.json()) as Array<{ id: number; name: string; itemCount: number; leasedCount: number }>;
-    const listedBook = booksData.find((book) => book.id === fixture.bookId);
-    expect(listedBook?.name).toBe(fixture.bookName);
+    const listedBook = booksData.find((book) => book.id === currentFixture.bookId);
+    expect(listedBook?.name).toBe(currentFixture.bookName);
     expect(listedBook?.itemCount).toBe(1);
 
-    await page.goto(`/books/${fixture.bookId}`);
+    await page.goto(`/books/${currentFixture.bookId}`);
     await expect(page.getByRole("heading", { name: "Buch-Items" })).toBeVisible();
-    await expect(page.getByRole("button", { name: fixture.studentLabel })).toBeVisible();
+    await expect(page.getByRole("button", { name: currentFixture.studentLabel })).toBeVisible();
     await expect(page.getByRole("button", { name: "Item anlegen" })).toHaveCount(0);
   } finally {
     await cleanupFixture(fixture);
@@ -319,10 +325,11 @@ test("return button immediately marks item as available", async ({ page }) => {
     await expect(refreshedRow.getByText("Verfügbar")).toBeVisible();
     await expect(refreshedRow.getByRole("button", { name: "Zurückgeben" })).toHaveCount(0);
 
+    const currentFixture = fixture;
     const booksResponse = await page.request.get("/api/books");
     expect(booksResponse.ok()).toBeTruthy();
     const booksData = (await booksResponse.json()) as Array<{ id: number; itemCount: number; leasedCount: number }>;
-    const updatedBook = booksData.find((book) => book.id === fixture.bookId);
+    const updatedBook = booksData.find((book) => book.id === currentFixture.bookId);
     expect(updatedBook).toBeTruthy();
     expect(updatedBook?.itemCount).toBe(1);
     expect(updatedBook?.leasedCount).toBe(0);

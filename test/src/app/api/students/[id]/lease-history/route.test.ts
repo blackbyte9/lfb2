@@ -46,7 +46,7 @@ test("GET /api/students/[id]/lease-history validates id and returns history", as
           },
         },
       },
-    ]) as unknown) as typeof prisma.lease.findMany;
+    ]) as unknown) as unknown as typeof prisma.lease.findMany;
 
   try {
     const invalid = await GET(new Request("http://localhost/api/students/x/lease-history") as never, {

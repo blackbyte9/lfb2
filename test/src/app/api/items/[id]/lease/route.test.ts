@@ -43,15 +43,15 @@ test("POST /api/items/[id]/lease accepts admin role", async () => {
     lastname: "Meyer",
     course: "10A",
     status: "ACTIVE",
-  })) as typeof prisma.student.findUnique;
+  })) as unknown as typeof prisma.student.findUnique;
   prisma.item.findUnique = (async () => ({
     id: "RSV1",
     status: "NEW",
     book: { id: 5, name: "Book A" },
     leases: [],
-  })) as typeof prisma.item.findUnique;
-  prisma.lease.create = (async () => ({ id: 99 })) as typeof prisma.lease.create;
-  prisma.lease.findMany = (async () => []) as typeof prisma.lease.findMany;
+  })) as unknown as typeof prisma.item.findUnique;
+  prisma.lease.create = (async () => ({ id: 99 })) as unknown as typeof prisma.lease.create;
+  prisma.lease.findMany = (async () => []) as unknown as typeof prisma.lease.findMany;
 
   try {
     const response = await POST(new Request("http://localhost/api/items/RSV1/lease", {
@@ -88,14 +88,14 @@ test("POST /api/items/[id]/lease returns leased item snapshot", async () => {
     lastname: "Meyer",
     course: "10A",
     status: "ACTIVE",
-  })) as typeof prisma.student.findUnique;
+  })) as unknown as typeof prisma.student.findUnique;
   prisma.item.findUnique = (async () => ({
     id: "RSV1",
     status: "NEW",
     book: { id: 5, name: "Book A" },
     leases: [],
-  })) as typeof prisma.item.findUnique;
-  prisma.lease.create = (async () => ({ id: 99 })) as typeof prisma.lease.create;
+  })) as unknown as typeof prisma.item.findUnique;
+  prisma.lease.create = (async () => ({ id: 99 })) as unknown as typeof prisma.lease.create;
   prisma.lease.findMany = (async () => [
     {
       id: 99,
@@ -105,7 +105,7 @@ test("POST /api/items/[id]/lease returns leased item snapshot", async () => {
         book: { id: 5, name: "Book A" },
       },
     },
-  ]) as typeof prisma.lease.findMany;
+  ]) as unknown as typeof prisma.lease.findMany;
 
   try {
     const response = await POST(
@@ -147,13 +147,13 @@ test("POST /api/items/[id]/lease rejects damaged items as unavailable", async ()
     lastname: "Meyer",
     course: "10A",
     status: "ACTIVE",
-  })) as typeof prisma.student.findUnique;
+  })) as unknown as typeof prisma.student.findUnique;
   prisma.item.findUnique = (async () => ({
     id: "RSV1",
     status: "DAMAGED",
     book: { id: 5, name: "Book A" },
     leases: [],
-  })) as typeof prisma.item.findUnique;
+  })) as unknown as typeof prisma.item.findUnique;
 
   try {
     const response = await POST(new Request("http://localhost/api/items/RSV1/lease", {

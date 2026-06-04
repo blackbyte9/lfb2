@@ -71,6 +71,7 @@ const ITEM_STATUSES: ItemStatus[] = ["NEW", "USED", "DAMAGED", "REMOVED"];
 export function BookItemsManager({ book, books, initialItems, canManage, canReturn, highlightItemId = null }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<ItemRow[]>(initialItems);
+  const [suppressedHighlightItemId, setSuppressedHighlightItemId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"id" | "status" | "leased">("leased");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
@@ -90,6 +91,8 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
   const itemRowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
 
   const sortedBooks = useMemo(() => [...books].sort((a, b) => a.name.localeCompare(b.name, "de")), [books]);
+  const activeHighlightItemId =
+    highlightItemId && suppressedHighlightItemId === highlightItemId ? null : highlightItemId;
   const sortedItems = useMemo(() => {
     return [...items].sort((left, right) => {
       let comparison: number;
@@ -105,13 +108,13 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
   }, [items, sortBy, sortOrder]);
 
   useEffect(() => {
-    if (!highlightItemId) {
+    if (!activeHighlightItemId) {
       return;
     }
 
-    const row = itemRowRefs.current[highlightItemId];
+    const row = itemRowRefs.current[activeHighlightItemId];
     row?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [highlightItemId, sortedItems]);
+  }, [activeHighlightItemId]);
 
   async function handleCreateItem() {
     setItemsError(null);
@@ -146,43 +149,6 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
     setNewItemId("");
   }
 
-  async function handleDeleteItem(itemId: string) {
-    setItemsError(null);
-    setItemsInfo(null);
-
-    const res = await fetch(`/api/items/${itemId}`, { method: "DELETE" });
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      setItemsError(data.error ?? "Item konnte nicht gelöscht werden");
-      return;
-    }
-
-    setItems((prev) => prev.filter((item) => item.id !== itemId));
-    setItemsInfo(`Item ${itemId} wurde gelöscht`);
-  }
-
-  async function handleReturnItem(itemId: string) {
-    setItemsError(null);
-    setItemsInfo(null);
-    setUpdatingItemId(itemId);
-
-    const res = await fetch(`/api/items/${itemId}/return`, { method: "POST" });
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      setItemsError(data.error ?? "Rückgabe konnte nicht durchgeführt werden");
-      setUpdatingItemId(null);
-      return;
-    }
-
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, isLeased: false, leasedStudentId: null, leasedStudentName: null } : item,
-      ),
-    );
-    setItemsInfo(`Item ${itemId} wurde zurückgegeben`);
-    setUpdatingItemId(null);
-  }
-
   async function handleUpdateItemStatus(itemId: string, status: ItemStatus) {
     setItemsError(null);
     setItemsInfo(null);
@@ -204,6 +170,36 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
     const updated = (await res.json()) as ItemRow;
     setItems((prev) => prev.map((item) => (item.id === itemId ? { ...item, status: updated.status } : item)));
     setItemsInfo(`Status für ${itemId} wurde aktualisiert`);
+    setUpdatingItemId(null);
+  }
+
+  async function handleReturnItem(itemId: string) {
+    setItemsError(null);
+    setItemsInfo(null);
+    setUpdatingItemId(itemId);
+
+    const res = await fetch(`/api/items/${itemId}/return`, { method: "POST" });
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string };
+      setItemsError(data.error ?? "Rückgabe konnte nicht durchgeführt werden");
+      setUpdatingItemId(null);
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              isLeased: false,
+              leasedStudentId: null,
+              leasedStudentName: null,
+              status: item.status === "NEW" ? "USED" : item.status,
+            }
+          : item,
+      ),
+    );
+    setItemsInfo(`Item ${itemId} wurde zurückgegeben`);
     setUpdatingItemId(null);
   }
 
@@ -237,6 +233,8 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
   }
 
   function toggleSort(column: "id" | "status" | "leased") {
+    setSuppressedHighlightItemId(highlightItemId ?? null);
+
     if (sortBy === column) {
       setSortOrder((current) => (current === "asc" ? "desc" : "asc"));
       return;
@@ -405,13 +403,12 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
               </TableHead>
               <TableHead>Erstellt</TableHead>
               <TableHead className="w-28">Verlauf</TableHead>
-              {canManage && <TableHead className="w-40">Aktionen</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canManage ? 6 : 5} className="py-6 text-center text-[#364152]">
+                <TableCell colSpan={5} className="py-6 text-center text-[#364152]">
                   Keine Items fur dieses Buch vorhanden
                 </TableCell>
               </TableRow>
@@ -422,7 +419,7 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
                   ref={(element) => {
                     itemRowRefs.current[item.id] = element;
                   }}
-                  className={`${highlightItemId === item.id ? "bg-[#e4f6ea]" : ""} cursor-pointer hover:bg-[#f9fafb]`}
+                  className={`${activeHighlightItemId === item.id ? "bg-[#e4f6ea]" : ""} cursor-pointer hover:bg-[#f9fafb]`}
                   onClick={(event) => {
                     const target = event.target as HTMLElement;
                     if (target.closest("button, select, a, input")) {
@@ -432,16 +429,46 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
                   }}
                 >
                   <TableCell className="font-mono text-xs">{item.id}</TableCell>
-                  <TableCell>{item.status}</TableCell>
+                  <TableCell>
+                    {canManage ? (
+                      <select
+                        value={item.status}
+                        onChange={(e) => void handleUpdateItemStatus(item.id, e.target.value as ItemStatus)}
+                        disabled={updatingItemId === item.id}
+                        className="rounded border border-black/20 bg-white px-2 py-1 text-xs"
+                        aria-label={`Status für Item ${item.id} ändern`}
+                      >
+                        {ITEM_STATUSES.map((statusValue) => (
+                          <option key={statusValue} value={statusValue}>
+                            {statusValue}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      item.status
+                    )}
+                  </TableCell>
                   <TableCell>
                     {item.isLeased && item.leasedStudentId !== null ? (
-                      <button
-                        type="button"
-                        className="font-medium text-amber-700 hover:underline text-left"
-                        onClick={() => router.push(`/lease/${item.leasedStudentId}`)}
-                      >
-                        {item.leasedStudentName ?? "Ausgeliehen"}
-                      </button>
+                      <div className="flex flex-col items-start gap-1">
+                        <button
+                          type="button"
+                          className="font-medium text-amber-700 hover:underline text-left"
+                          onClick={() => router.push(`/lease/${item.leasedStudentId}`)}
+                        >
+                          {item.leasedStudentName ?? "Ausgeliehen"}
+                        </button>
+                        {canReturn ? (
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            disabled={updatingItemId === item.id}
+                            onClick={() => void handleReturnItem(item.id)}
+                          >
+                            Rückgabe
+                          </Button>
+                        ) : null}
+                      </div>
                     ) : (
                       <span className="font-medium text-green-700">Verfügbar</span>
                     )}
@@ -452,40 +479,6 @@ export function BookItemsManager({ book, books, initialItems, canManage, canRetu
                       Verlauf
                     </Button>
                   </TableCell>
-                  {canManage && (
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={item.status}
-                          onChange={(e) => void handleUpdateItemStatus(item.id, e.target.value as ItemStatus)}
-                          disabled={updatingItemId === item.id}
-                          className="rounded border border-black/20 bg-white px-2 py-1 text-xs"
-                          aria-label={`Status für Item ${item.id} ändern`}
-                        >
-                          {ITEM_STATUSES.map((statusValue) => (
-                            <option key={statusValue} value={statusValue}>
-                              {statusValue}
-                            </option>
-                          ))}
-                        </select>
-                        {item.isLeased && canReturn && (
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            disabled={updatingItemId === item.id}
-                            onClick={() => void handleReturnItem(item.id)}
-                          >
-                            Zurückgeben
-                          </Button>
-                        )}
-                        {!item.hasAnyLeases ? (
-                          <Button size="xs" variant="outline" onClick={() => void handleDeleteItem(item.id)}>
-                            Löschen
-                          </Button>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  )}
                 </TableRow>
               ))
             )}

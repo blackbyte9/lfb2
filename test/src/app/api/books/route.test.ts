@@ -21,7 +21,7 @@ test("GET /api/books maps itemCount and leasedCount", async () => {
         { id: "I2", _count: { leases: 1 } },
       ],
     },
-  ]) as typeof prisma.book.findMany;
+  ]) as unknown as typeof prisma.book.findMany;
 
   try {
     const response = await GET();
@@ -66,7 +66,7 @@ test("POST /api/books returns 409 on unique conflicts", async () => {
   auth.api.getSession = (async () => ({ user: { role: "USER" } })) as typeof auth.api.getSession;
   prisma.book.create = (async () => {
     throw new Error("Unique constraint failed");
-  }) as typeof prisma.book.create;
+  }) as unknown as typeof prisma.book.create;
 
   try {
     const request = new Request("http://localhost/api/books", {

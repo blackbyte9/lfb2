@@ -29,7 +29,7 @@ test("POST /api/items/[id]/return returns 404 when no active lease exists", asyn
   const originalFindFirst = prisma.lease.findFirst;
 
   auth.api.getSession = (async () => ({ user: { role: "USER" } })) as typeof auth.api.getSession;
-  prisma.lease.findFirst = (async () => null) as typeof prisma.lease.findFirst;
+  prisma.lease.findFirst = (async () => null) as unknown as typeof prisma.lease.findFirst;
 
   try {
     const response = await POST(new Request("http://localhost/api/items/RSV1/return") as never, { params: Promise.resolve({ id: "RSV1" }) });
@@ -48,9 +48,14 @@ test("POST /api/items/[id]/return marks lease inactive", async () => {
   const originalGetSession = auth.api.getSession;
   const originalFindFirst = prisma.lease.findFirst;
   const originalFindMany = prisma.lease.findMany;
-  const originalUpdate = prisma.lease.update;
+  const originalLeaseUpdate = prisma.lease.update;
+  const originalItemUpdateMany = prisma.item.updateMany;
+  const originalTransaction = prisma.$transaction;
 
   let updateArgs: unknown;
+  let itemUpdateManyArgs: unknown;
+
+  prisma.$transaction = (async <T>(operations: readonly T[]) => Promise.all(operations)) as unknown as typeof prisma.$transaction;
 
   auth.api.getSession = (async () => ({ user: { role: "USER" } })) as typeof auth.api.getSession;
   prisma.lease.findFirst = (async () => ({
@@ -58,6 +63,7 @@ test("POST /api/items/[id]/return marks lease inactive", async () => {
     studentId: 77,
     item: {
       id: "RSV1",
+      status: "NEW",
       book: {
         id: 1,
         name: "Deutsch 10",
@@ -70,12 +76,16 @@ test("POST /api/items/[id]/return marks lease inactive", async () => {
       lastname: "Meyer",
       course: "10A",
     },
-  })) as typeof prisma.lease.findFirst;
-  prisma.lease.findMany = (async () => []) as typeof prisma.lease.findMany;
-  prisma.lease.update = (async (args) => {
+  })) as unknown as typeof prisma.lease.findFirst;
+  prisma.lease.findMany = (async () => []) as unknown as typeof prisma.lease.findMany;
+  prisma.lease.update = ((args: unknown) => {
     updateArgs = args;
-    return { id: 123 };
-  }) as typeof prisma.lease.update;
+    return Promise.resolve({ id: 123 });
+  }) as unknown as typeof prisma.lease.update;
+  prisma.item.updateMany = ((args: unknown) => {
+    itemUpdateManyArgs = args;
+    return Promise.resolve({ count: 1 });
+  }) as unknown as typeof prisma.item.updateMany;
 
   try {
     const response = await POST(new Request("http://localhost/api/items/RSV1/return") as never, { params: Promise.resolve({ id: "RSV1" }) });
@@ -85,11 +95,15 @@ test("POST /api/items/[id]/return marks lease inactive", async () => {
     assert.equal(body.student?.id, 77);
     assert.match(JSON.stringify(updateArgs), /"active":false/);
     assert.match(JSON.stringify(updateArgs), /"returnedAt"/);
+    assert.match(JSON.stringify(itemUpdateManyArgs), /"status":"NEW"/);
+    assert.match(JSON.stringify(itemUpdateManyArgs), /"status":"USED"/);
   } finally {
     auth.api.getSession = originalGetSession;
     prisma.lease.findFirst = originalFindFirst;
     prisma.lease.findMany = originalFindMany;
-    prisma.lease.update = originalUpdate;
+    prisma.lease.update = originalLeaseUpdate;
+    prisma.item.updateMany = originalItemUpdateMany;
+    prisma.$transaction = originalTransaction;
   }
 });
 
@@ -101,13 +115,18 @@ test("POST /api/items/[id]/return accepts admin role", async () => {
   const originalGetSession = auth.api.getSession;
   const originalFindFirst = prisma.lease.findFirst;
   const originalFindMany = prisma.lease.findMany;
-  const originalUpdate = prisma.lease.update;
+  const originalLeaseUpdate = prisma.lease.update;
+  const originalItemUpdateMany = prisma.item.updateMany;
+  const originalTransaction = prisma.$transaction;
+
+  prisma.$transaction = (async <T>(operations: readonly T[]) => Promise.all(operations)) as unknown as typeof prisma.$transaction;
   auth.api.getSession = (async () => ({ user: { role: "ADMIN" } })) as typeof auth.api.getSession;
   prisma.lease.findFirst = (async () => ({
     id: 123,
     studentId: 77,
     item: {
       id: "RSV1",
+      status: "USED",
       book: {
         id: 1,
         name: "Deutsch 10",
@@ -120,9 +139,10 @@ test("POST /api/items/[id]/return accepts admin role", async () => {
       lastname: "Meyer",
       course: "10A",
     },
-  })) as typeof prisma.lease.findFirst;
-  prisma.lease.findMany = (async () => []) as typeof prisma.lease.findMany;
-  prisma.lease.update = (async () => ({ id: 123 })) as typeof prisma.lease.update;
+  })) as unknown as typeof prisma.lease.findFirst;
+  prisma.lease.findMany = (async () => []) as unknown as typeof prisma.lease.findMany;
+  prisma.lease.update = (() => Promise.resolve({ id: 123 })) as unknown as typeof prisma.lease.update;
+  prisma.item.updateMany = (() => Promise.resolve({ count: 0 })) as unknown as typeof prisma.item.updateMany;
 
   try {
     const response = await POST(new Request("http://localhost/api/items/RSV1/return") as never, {
@@ -133,6 +153,8 @@ test("POST /api/items/[id]/return accepts admin role", async () => {
     auth.api.getSession = originalGetSession;
     prisma.lease.findFirst = originalFindFirst;
     prisma.lease.findMany = originalFindMany;
-    prisma.lease.update = originalUpdate;
+    prisma.lease.update = originalLeaseUpdate;
+    prisma.item.updateMany = originalItemUpdateMany;
+    prisma.$transaction = originalTransaction;
   }
 });

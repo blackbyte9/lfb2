@@ -26,7 +26,7 @@ test("GET /api/items maps lease and student fields", async () => {
       updatedAt: new Date("2026-01-01T00:00:00.000Z"),
       leases: [{ studentId: 10, student: { firstname: "Anna", lastname: "Meyer" } }],
     },
-  ]) as typeof prisma.item.findMany;
+  ]) as unknown as typeof prisma.item.findMany;
 
   try {
     const response = await GET(new Request("http://localhost/api/items") as never);

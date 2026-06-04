@@ -30,7 +30,7 @@ test("GET /api/students/[id]/grade-history accepts admin role", async () => {
   const originalGetSession = auth.api.getSession;
   const originalFindMany = prisma.studentGradeHistory.findMany;
   auth.api.getSession = (async () => ({ user: { role: "ADMIN" } })) as typeof auth.api.getSession;
-  prisma.studentGradeHistory.findMany = (async () => []) as typeof prisma.studentGradeHistory.findMany;
+  prisma.studentGradeHistory.findMany = (async () => []) as unknown as typeof prisma.studentGradeHistory.findMany;
 
   try {
     const response = await GET(new Request("http://localhost/api/students/1/grade-history") as never, {
@@ -60,7 +60,7 @@ test("GET /api/students/[id]/grade-history validates id and returns history", as
       source: "manual",
       updatedAt: new Date("2026-01-01T00:00:00.000Z"),
     },
-  ]) as typeof prisma.studentGradeHistory.findMany;
+  ]) as unknown as typeof prisma.studentGradeHistory.findMany;
 
   try {
     const invalid = await GET(new Request("http://localhost/api/students/x/grade-history") as never, {

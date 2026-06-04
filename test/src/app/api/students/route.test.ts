@@ -41,7 +41,7 @@ test("GET /api/students maps activeLeasesCount", async () => {
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         _count: { leases: 2 },
       },
-    ]) as unknown) as typeof prisma.student.findMany;
+    ]) as unknown) as unknown as typeof prisma.student.findMany;
 
   try {
     const response = await GET(new Request("http://localhost/api/students") as never);
@@ -106,7 +106,7 @@ test("POST /api/students creates with default SPECIAL status", async () => {
         status: createArgs.data.status,
         createdAt: new Date("2026-06-01T00:00:00.000Z"),
       };
-    }) as unknown) as typeof prisma.student.create;
+    }) as unknown) as unknown as typeof prisma.student.create;
 
   try {
     const response = await POST(

@@ -37,8 +37,8 @@ test("GET /api/students/[id]/leases accepts admin role", async () => {
     firstname: "Anna",
     lastname: "Meyer",
     course: "10A",
-  })) as typeof prisma.student.findUnique;
-  prisma.lease.findMany = (async () => []) as typeof prisma.lease.findMany;
+  })) as unknown as typeof prisma.student.findUnique;
+  prisma.lease.findMany = (async () => []) as unknown as typeof prisma.lease.findMany;
 
   try {
     const response = await GET(new Request("http://localhost/api/students/1/leases") as never, {
@@ -61,7 +61,7 @@ test("GET /api/students/[id]/leases validates id and missing student", async () 
   const originalFindUnique = prisma.student.findUnique;
 
   auth.api.getSession = (async () => ({ user: { role: "USER" } })) as typeof auth.api.getSession;
-  prisma.student.findUnique = (async () => null) as typeof prisma.student.findUnique;
+  prisma.student.findUnique = (async () => null) as unknown as typeof prisma.student.findUnique;
 
   try {
     const invalidId = await GET(new Request("http://localhost/api/students/x/leases") as never, {
@@ -95,7 +95,7 @@ test("GET /api/students/[id]/leases returns student and active leases", async ()
     firstname: "Anna",
     lastname: "Meyer",
     course: "10A",
-  })) as typeof prisma.student.findUnique;
+  })) as unknown as typeof prisma.student.findUnique;
   prisma.lease.findMany = (async () => [
     {
       id: 7,
@@ -108,7 +108,7 @@ test("GET /api/students/[id]/leases returns student and active leases", async ()
         book: { id: 5, isbn: "978-1", name: "Book A" },
       },
     },
-  ]) as typeof prisma.lease.findMany;
+  ]) as unknown as typeof prisma.lease.findMany;
 
   try {
     const response = await GET(new Request("http://localhost/api/students/1/leases") as never, {

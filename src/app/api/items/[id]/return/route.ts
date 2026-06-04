@@ -20,6 +20,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       item: {
         select: {
           id: true,
+          status: true,
           book: {
             select: {
               id: true,
@@ -44,10 +45,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Keine aktive Ausleihe für dieses Item gefunden" }, { status: 404 });
   }
 
-  await prisma.lease.update({
-    where: { id: lease.id },
-    data: { active: false, returnedAt: new Date() },
-  });
+  await prisma.$transaction([
+    prisma.lease.update({
+      where: { id: lease.id },
+      data: { active: false, returnedAt: new Date() },
+    }),
+    prisma.item.updateMany({
+      where: { id: lease.item.id, status: "NEW" },
+      data: { status: "USED" },
+    }),
+  ]);
 
   const remainingLeases = await prisma.lease.findMany({
     where: { studentId: lease.studentId, active: true },

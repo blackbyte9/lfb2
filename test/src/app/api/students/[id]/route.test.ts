@@ -72,7 +72,7 @@ test("PATCH /api/students/[id] maps unique-constraint error to 409", async () =>
   auth.api.getSession = (async () => ({ user: { role: "USER" } })) as typeof auth.api.getSession;
   prisma.student.update = (async () => {
     throw new Error("Unique constraint failed");
-  }) as typeof prisma.student.update;
+  }) as unknown as typeof prisma.student.update;
 
   try {
     const request = new Request("http://localhost/api/students/1", {
@@ -106,7 +106,7 @@ test("PATCH /api/students/[id] accepts admin role", async () => {
     status: "ACTIVE",
     createdAt: new Date(),
     updatedAt: new Date(),
-  })) as typeof prisma.student.update;
+  })) as unknown as typeof prisma.student.update;
 
   try {
     const request = new Request("http://localhost/api/students/1", {
