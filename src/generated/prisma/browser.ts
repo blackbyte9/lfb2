@@ -48,6 +48,16 @@ export type Account = Prisma.AccountModel
  */
 export type Verification = Prisma.VerificationModel
 /**
+ * Model LabelPrintRun
+ * 
+ */
+export type LabelPrintRun = Prisma.LabelPrintRunModel
+/**
+ * Model PrintedLabel
+ * 
+ */
+export type PrintedLabel = Prisma.PrintedLabelModel
+/**
  * Model Book
  * 
  */

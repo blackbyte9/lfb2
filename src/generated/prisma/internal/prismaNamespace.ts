@@ -390,6 +390,8 @@ export const ModelName = {
   Session: 'Session',
   Account: 'Account',
   Verification: 'Verification',
+  LabelPrintRun: 'LabelPrintRun',
+  PrintedLabel: 'PrintedLabel',
   Book: 'Book',
   Item: 'Item',
   Lease: 'Lease',
@@ -410,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "student" | "studentGradeHistory" | "user" | "session" | "account" | "verification" | "book" | "item" | "lease" | "comment" | "test"
+    modelProps: "student" | "studentGradeHistory" | "user" | "session" | "account" | "verification" | "labelPrintRun" | "printedLabel" | "book" | "item" | "lease" | "comment" | "test"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -855,6 +857,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.VerificationCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.VerificationCountAggregateOutputType> | number
+        }
+      }
+    }
+    LabelPrintRun: {
+      payload: Prisma.$LabelPrintRunPayload<ExtArgs>
+      fields: Prisma.LabelPrintRunFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.LabelPrintRunFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LabelPrintRunPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.LabelPrintRunFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LabelPrintRunPayload>
+        }
+        findFirst: {
+          args: Prisma.LabelPrintRunFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LabelPrintRunPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.LabelPrintRunFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LabelPrintRunPayload>
+        }
+        findMany: {
+          args: Prisma.LabelPrintRunFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LabelPrintRunPayload>[]
+        }
+        create: {
+          args: Prisma.LabelPrintRunCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LabelPrintRunPayload>
+        }
+        createMany: {
+          args: Prisma.LabelPrintRunCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.LabelPrintRunCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LabelPrintRunPayload>[]
+        }
+        delete: {
+          args: Prisma.LabelPrintRunDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LabelPrintRunPayload>
+        }
+        update: {
+          args: Prisma.LabelPrintRunUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LabelPrintRunPayload>
+        }
+        deleteMany: {
+          args: Prisma.LabelPrintRunDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.LabelPrintRunUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.LabelPrintRunUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LabelPrintRunPayload>[]
+        }
+        upsert: {
+          args: Prisma.LabelPrintRunUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LabelPrintRunPayload>
+        }
+        aggregate: {
+          args: Prisma.LabelPrintRunAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateLabelPrintRun>
+        }
+        groupBy: {
+          args: Prisma.LabelPrintRunGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LabelPrintRunGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.LabelPrintRunCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LabelPrintRunCountAggregateOutputType> | number
+        }
+      }
+    }
+    PrintedLabel: {
+      payload: Prisma.$PrintedLabelPayload<ExtArgs>
+      fields: Prisma.PrintedLabelFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PrintedLabelFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PrintedLabelPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PrintedLabelFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PrintedLabelPayload>
+        }
+        findFirst: {
+          args: Prisma.PrintedLabelFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PrintedLabelPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PrintedLabelFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PrintedLabelPayload>
+        }
+        findMany: {
+          args: Prisma.PrintedLabelFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PrintedLabelPayload>[]
+        }
+        create: {
+          args: Prisma.PrintedLabelCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PrintedLabelPayload>
+        }
+        createMany: {
+          args: Prisma.PrintedLabelCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PrintedLabelCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PrintedLabelPayload>[]
+        }
+        delete: {
+          args: Prisma.PrintedLabelDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PrintedLabelPayload>
+        }
+        update: {
+          args: Prisma.PrintedLabelUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PrintedLabelPayload>
+        }
+        deleteMany: {
+          args: Prisma.PrintedLabelDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PrintedLabelUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PrintedLabelUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PrintedLabelPayload>[]
+        }
+        upsert: {
+          args: Prisma.PrintedLabelUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PrintedLabelPayload>
+        }
+        aggregate: {
+          args: Prisma.PrintedLabelAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePrintedLabel>
+        }
+        groupBy: {
+          args: Prisma.PrintedLabelGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PrintedLabelGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PrintedLabelCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PrintedLabelCountAggregateOutputType> | number
         }
       }
     }
@@ -1359,6 +1509,28 @@ export const VerificationScalarFieldEnum = {
 export type VerificationScalarFieldEnum = (typeof VerificationScalarFieldEnum)[keyof typeof VerificationScalarFieldEnum]
 
 
+export const LabelPrintRunScalarFieldEnum = {
+  id: 'id',
+  pages: 'pages',
+  count: 'count',
+  firstId: 'firstId',
+  lastId: 'lastId',
+  createdAt: 'createdAt'
+} as const
+
+export type LabelPrintRunScalarFieldEnum = (typeof LabelPrintRunScalarFieldEnum)[keyof typeof LabelPrintRunScalarFieldEnum]
+
+
+export const PrintedLabelScalarFieldEnum = {
+  id: 'id',
+  labelId: 'labelId',
+  runId: 'runId',
+  createdAt: 'createdAt'
+} as const
+
+export type PrintedLabelScalarFieldEnum = (typeof PrintedLabelScalarFieldEnum)[keyof typeof PrintedLabelScalarFieldEnum]
+
+
 export const BookScalarFieldEnum = {
   id: 'id',
   isbn: 'isbn',
@@ -1665,6 +1837,8 @@ export type GlobalOmitConfig = {
   session?: Prisma.SessionOmit
   account?: Prisma.AccountOmit
   verification?: Prisma.VerificationOmit
+  labelPrintRun?: Prisma.LabelPrintRunOmit
+  printedLabel?: Prisma.PrintedLabelOmit
   book?: Prisma.BookOmit
   item?: Prisma.ItemOmit
   lease?: Prisma.LeaseOmit

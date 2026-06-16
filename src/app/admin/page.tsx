@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AdminUsersTable } from "@/components/managers/admin-users-table";
 import { AdminImportsPanel } from "@/components/managers/admin-imports-panel";
+import { AdminLabelsPanel } from "@/components/managers/admin-labels-panel";
 import { AdminCreateUserForm } from "@/components/generic/admin-create-user-form";
 
 const ADMIN_ERRORS: Record<string, string> = {
@@ -42,7 +43,7 @@ export default async function AdminPage({
 
   const params = await searchParams;
   const errorMessage = params.error ? ADMIN_ERRORS[params.error] : undefined;
-  const activeTab = params.tab === "imports" ? "imports" : "users";
+  const activeTab = params.tab === "imports" ? "imports" : params.tab === "labels" ? "labels" : "users";
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
@@ -86,6 +87,14 @@ export default async function AdminPage({
           >
             Importe
           </Link>
+          <Link
+            href="/admin?tab=labels"
+            className={`rounded-md px-3 py-1 font-medium ${
+              activeTab === "labels" ? "bg-[#006b2d] text-white" : "bg-white text-[#111827]"
+            }`}
+          >
+            Etiketten
+          </Link>
         </div>
 
         {errorMessage ? (
@@ -101,6 +110,8 @@ export default async function AdminPage({
               <AdminUsersTable users={tableRows} />
             </div>
           </div>
+        ) : activeTab === "labels" ? (
+          <AdminLabelsPanel />
         ) : (
           <div className="rounded-lg border border-black/10 p-4">
             <AdminImportsPanel />

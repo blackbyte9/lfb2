@@ -57,6 +57,8 @@ export const ModelName = {
   Session: 'Session',
   Account: 'Account',
   Verification: 'Verification',
+  LabelPrintRun: 'LabelPrintRun',
+  PrintedLabel: 'PrintedLabel',
   Book: 'Book',
   Item: 'Item',
   Lease: 'Lease',
@@ -170,6 +172,28 @@ export const VerificationScalarFieldEnum = {
 } as const
 
 export type VerificationScalarFieldEnum = (typeof VerificationScalarFieldEnum)[keyof typeof VerificationScalarFieldEnum]
+
+
+export const LabelPrintRunScalarFieldEnum = {
+  id: 'id',
+  pages: 'pages',
+  count: 'count',
+  firstId: 'firstId',
+  lastId: 'lastId',
+  createdAt: 'createdAt'
+} as const
+
+export type LabelPrintRunScalarFieldEnum = (typeof LabelPrintRunScalarFieldEnum)[keyof typeof LabelPrintRunScalarFieldEnum]
+
+
+export const PrintedLabelScalarFieldEnum = {
+  id: 'id',
+  labelId: 'labelId',
+  runId: 'runId',
+  createdAt: 'createdAt'
+} as const
+
+export type PrintedLabelScalarFieldEnum = (typeof PrintedLabelScalarFieldEnum)[keyof typeof PrintedLabelScalarFieldEnum]
 
 
 export const BookScalarFieldEnum = {

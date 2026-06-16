@@ -123,6 +123,24 @@ model Verification {
   @@index([identifier])
 }
 
+model LabelPrintRun {
+  id        Int            @id @default(autoincrement())
+  pages     Int
+  count     Int
+  firstId   String
+  lastId    String
+  createdAt DateTime       @default(now())
+  labels    PrintedLabel[]
+}
+
+model PrintedLabel {
+  id        Int           @id @default(autoincrement())
+  labelId   String        @unique
+  runId     Int
+  run       LabelPrintRun @relation(fields: [runId], references: [id])
+  createdAt DateTime      @default(now())
+}
+
 model Book {
   id        Int      @id @default(autoincrement())
   isbn      String   @unique
