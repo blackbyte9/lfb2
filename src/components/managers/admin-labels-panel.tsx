@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -30,23 +30,18 @@ export function AdminLabelsPanel() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryResponse | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
-
-  const loadHistory = useCallback(async () => {
-    setHistoryLoading(true);
-    try {
-      const res = await fetch("/api/labels/history");
-      if (res.ok) {
-        const data = (await res.json()) as HistoryResponse;
-        setHistory(data);
-      }
-    } finally {
-      setHistoryLoading(false);
-    }
-  }, []);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   useEffect(() => {
-    void loadHistory();
-  }, [loadHistory]);
+    let cancelled = false;
+    setHistoryLoading(true);
+    fetch("/api/labels/history")
+      .then((res) => (res.ok ? (res.json() as Promise<HistoryResponse>) : null))
+      .then((data) => { if (!cancelled && data) setHistory(data); })
+      .catch(() => { /* silently ignore – history failing shouldn't block the UI */ })
+      .finally(() => { if (!cancelled) setHistoryLoading(false); });
+    return () => { cancelled = true; };
+  }, [historyRefreshKey]);
 
   const totalLabels = pages * LABELS_PER_PAGE;
 
@@ -71,7 +66,7 @@ export function AdminLabelsPanel() {
 
       await generatePdf(data.labels, setStageDetail);
 
-      await loadHistory();
+      setHistoryRefreshKey((k) => k + 1);
       setStage("done");
       setStageDetail(`${data.labels.length} Etiketten (${pages} Seite${pages !== 1 ? "n" : ""}) generiert: ${data.firstId} – ${data.lastId}`);
     } catch (err) {
