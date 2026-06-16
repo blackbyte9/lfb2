@@ -34,7 +34,6 @@ export function AdminLabelsPanel() {
 
   useEffect(() => {
     let cancelled = false;
-    setHistoryLoading(true);
     fetch("/api/labels/history")
       .then((res) => (res.ok ? (res.json() as Promise<HistoryResponse>) : null))
       .then((data) => { if (!cancelled && data) setHistory(data); })
@@ -153,7 +152,7 @@ export function AdminLabelsPanel() {
       <div className="rounded-lg border border-black/10 bg-white p-5">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-[#131820]">Druckhistorie</h2>
-          <Button size="xs" variant="outline" onClick={() => void loadHistory()} disabled={historyLoading}>
+          <Button size="xs" variant="outline" onClick={() => setHistoryRefreshKey((k) => k + 1)} disabled={historyLoading}>
             Aktualisieren
           </Button>
         </div>
