@@ -27,6 +27,23 @@ type Props = {
   canCreate: boolean;
 };
 
+type MergeField = "target" | "source";
+type MergeFields = {
+  idOld: MergeField;
+  firstname: MergeField;
+  lastname: MergeField;
+  course: MergeField;
+  status: MergeField;
+};
+
+const DEFAULT_MERGE_FIELDS: MergeFields = {
+  idOld: "target",
+  firstname: "target",
+  lastname: "target",
+  course: "target",
+  status: "target",
+};
+
 const STUDENT_STATUSES: StudentStatus[] = ["ACTIVE", "INACTIVE", "SPECIAL"];
 
 const STUDENT_STATUS_LABELS: Record<StudentStatus, string> = {
@@ -56,6 +73,14 @@ export function StudentsManager({ initialStudents, canManage, canCreate }: Props
   const [createLastname, setCreateLastname] = useState("");
   const [createCourse, setCreateCourse] = useState("");
   const [createStatus, setCreateStatus] = useState<StudentStatus>("SPECIAL");
+
+  // --- merge state ---
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeSaving, setMergeSaving] = useState(false);
+  const [mergeTargetStudent, setMergeTargetStudent] = useState<StudentRow | null>(null);
+  const [mergeSourceId, setMergeSourceId] = useState<number | null>(null);
+  const [mergeSearch, setMergeSearch] = useState("");
+  const [mergeFields, setMergeFields] = useState<MergeFields>(DEFAULT_MERGE_FIELDS);
 
   const columns: ColumnDef<StudentRow>[] = [
     {
@@ -133,9 +158,14 @@ export function StudentsManager({ initialStudents, canManage, canCreate }: Props
             header: "Aktionen",
             enableSorting: false,
             cell: ({ row }: { row: { original: StudentRow } }) => (
-              <Button size="xs" variant="outline" onClick={() => openEditStudent(row.original)}>
-                Bearbeiten
-              </Button>
+              <div className="flex gap-1">
+                <Button size="xs" variant="outline" onClick={() => openEditStudent(row.original)}>
+                  Bearbeiten
+                </Button>
+                <Button size="xs" variant="outline" onClick={() => openMerge(row.original)}>
+                  Zusammenführen
+                </Button>
+              </div>
             ),
           } satisfies ColumnDef<StudentRow>,
         ]
@@ -160,6 +190,20 @@ export function StudentsManager({ initialStudents, canManage, canCreate }: Props
       cell: ({ row }) => <span>{new Date(row.original.createdAt).toLocaleDateString("de-DE")}</span>,
     },
   ];
+
+  // --- merge derived values ---
+  const mergeSourceStudent = mergeSourceId !== null ? (students.find((s) => s.id === mergeSourceId) ?? null) : null;
+  const mergeStudentOptions = useMemo(() => {
+    if (!mergeTargetStudent) return [];
+    const query = mergeSearch.trim().toLowerCase();
+    return students
+      .filter((s) => s.id !== mergeTargetStudent.id)
+      .filter((s) => {
+        if (!query) return true;
+        const hay = [s.lastname, s.firstname, s.course, s.idOld ?? ""].join(" ").toLowerCase();
+        return hay.includes(query);
+      });
+  }, [students, mergeTargetStudent, mergeSearch]);
 
   const filteredStudents = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -199,6 +243,52 @@ export function StudentsManager({ initialStudents, canManage, canCreate }: Props
     }
 
     setStudents((prev) => prev.map((student) => (student.id === id ? { ...student, status } : student)));
+  }
+
+  function openMerge(student: StudentRow) {
+    setInfo(null);
+    setError(null);
+    setMergeTargetStudent(student);
+    setMergeSourceId(null);
+    setMergeSearch("");
+    setMergeFields(DEFAULT_MERGE_FIELDS);
+    setMergeOpen(true);
+  }
+
+  function closeMerge() {
+    setMergeOpen(false);
+    setMergeTargetStudent(null);
+    setMergeSourceId(null);
+    setMergeSaving(false);
+  }
+
+  async function saveMerge() {
+    if (!mergeTargetStudent || !mergeSourceId) return;
+    setMergeSaving(true);
+    setError(null);
+    setInfo(null);
+
+    const res = await fetch(`/api/students/${mergeTargetStudent.id}/merge`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sourceId: mergeSourceId, fields: mergeFields }),
+    });
+    const payload = (await res.json()) as { error?: string } & Partial<StudentRow>;
+    if (!res.ok) {
+      setError(payload.error ?? "Zusammenführen fehlgeschlagen");
+      setMergeSaving(false);
+      return;
+    }
+
+    const merged = payload as StudentRow;
+    setStudents((prev) =>
+      prev
+        .filter((s) => s.id !== mergeSourceId)
+        .map((s) => (s.id === mergeTargetStudent.id ? { ...s, ...merged } : s)),
+    );
+    setInfo(`${merged.lastname}, ${merged.firstname} wurde erfolgreich zusammengeführt.`);
+    setMergeSaving(false);
+    closeMerge();
   }
 
   function openEditStudent(student: StudentRow) {
@@ -512,6 +602,142 @@ export function StudentsManager({ initialStudents, canManage, canCreate }: Props
                 disabled={createSaving || !createFirstname.trim() || !createLastname.trim()}
               >
                 Erstellen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mergeOpen && mergeTargetStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-lg">
+            <h3 className="text-lg font-semibold text-[#131820]">Schüler zusammenführen</h3>
+            <p className="mt-1 text-sm text-[#364152]">
+              Wähle einen zweiten Schüler. Alle Ausleihen, Noten-Verlauf und Kommentare beider Schüler werden
+              zusammengeführt.{" "}
+              <strong>Der zweite Schüler wird anschließend dauerhaft gelöscht.</strong>
+            </p>
+
+            <div className="mt-3 rounded border border-[#006b2d]/30 bg-green-50 px-3 py-2 text-sm">
+              <span className="font-medium text-[#006b2d]">Bleibt erhalten: </span>
+              {mergeTargetStudent.lastname}, {mergeTargetStudent.firstname} – {mergeTargetStudent.course}
+              {mergeTargetStudent.idOld ? ` (ID: ${mergeTargetStudent.idOld})` : ""}
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <label htmlFor="merge-search" className="text-xs font-medium text-[#364152]">
+                Zweiten Schüler wählen (wird gelöscht)
+              </label>
+              <input
+                id="merge-search"
+                type="text"
+                value={mergeSearch}
+                onChange={(e) => setMergeSearch(e.target.value)}
+                placeholder="Name oder Kurs…"
+                className="w-full rounded border border-black/20 px-2 py-1 text-sm outline-none focus:border-[#006b2d]"
+              />
+              <div className="max-h-44 overflow-y-auto rounded border border-black/10">
+                {mergeStudentOptions.length === 0 ? (
+                  <p className="px-3 py-2 text-xs text-[#6b7280]">Keine Schüler gefunden</p>
+                ) : (
+                  mergeStudentOptions.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setMergeSourceId(s.id)}
+                      className={`w-full px-3 py-2 text-left text-sm hover:bg-[#f2f4f8] ${mergeSourceId === s.id ? "bg-[#006b2d]/10 font-medium" : ""}`}
+                    >
+                      {s.lastname}, {s.firstname} – {s.course}
+                      {s.idOld ? ` (ID: ${s.idOld})` : ""}
+                      {s.activeLeasesCount > 0 ? ` · ${s.activeLeasesCount} aktive Ausleihe(n)` : ""}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {mergeSourceStudent && (
+              <div className="mt-4">
+                <p className="mb-2 text-xs font-medium text-[#364152]">Welche Werte sollen erhalten bleiben?</p>
+                <div className="overflow-x-auto rounded border border-black/10">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-black/10 bg-[#f2f4f8] text-xs text-[#364152]">
+                        <th className="px-3 py-2 text-left font-medium">Feld</th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          <span className="font-semibold text-[#006b2d]">Behalten</span>
+                          <br />
+                          <span className="font-normal">
+                            {mergeTargetStudent.lastname}, {mergeTargetStudent.firstname}
+                          </span>
+                        </th>
+                        <th className="px-3 py-2 text-left font-medium">
+                          <span className="font-semibold text-red-600">Löschen</span>
+                          <br />
+                          <span className="font-normal">
+                            {mergeSourceStudent.lastname}, {mergeSourceStudent.firstname}
+                          </span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(
+                        [
+                          ["firstname", "Vorname", mergeTargetStudent.firstname, mergeSourceStudent.firstname],
+                          ["lastname", "Nachname", mergeTargetStudent.lastname, mergeSourceStudent.lastname],
+                          ["course", "Kurs", mergeTargetStudent.course, mergeSourceStudent.course],
+                          ["idOld", "Alte ID", mergeTargetStudent.idOld ?? "–", mergeSourceStudent.idOld ?? "–"],
+                          [
+                            "status",
+                            "Status",
+                            STUDENT_STATUS_LABELS[mergeTargetStudent.status],
+                            STUDENT_STATUS_LABELS[mergeSourceStudent.status],
+                          ],
+                        ] as [keyof MergeFields, string, string, string][]
+                      ).map(([field, label, targetVal, sourceVal]) => (
+                        <tr key={field} className="border-b border-black/5 last:border-0">
+                          <td className="px-3 py-2 text-xs font-medium text-[#364152]">{label}</td>
+                          <td className="px-3 py-2">
+                            <label className="flex cursor-pointer items-center gap-2">
+                              <input
+                                type="radio"
+                                name={`merge-field-${field}`}
+                                checked={mergeFields[field] === "target"}
+                                onChange={() => setMergeFields((prev) => ({ ...prev, [field]: "target" }))}
+                              />
+                              <span className={targetVal === "–" ? "text-[#9ca3af]" : ""}>{targetVal}</span>
+                            </label>
+                          </td>
+                          <td className="px-3 py-2">
+                            <label className="flex cursor-pointer items-center gap-2">
+                              <input
+                                type="radio"
+                                name={`merge-field-${field}`}
+                                checked={mergeFields[field] === "source"}
+                                onChange={() => setMergeFields((prev) => ({ ...prev, [field]: "source" }))}
+                              />
+                              <span className={sourceVal === "–" ? "text-[#9ca3af]" : ""}>{sourceVal}</span>
+                            </label>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={closeMerge} disabled={mergeSaving}>
+                Abbrechen
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => void saveMerge()}
+                disabled={!mergeSourceId || mergeSaving}
+              >
+                Zusammenführen & Löschen
               </Button>
             </div>
           </div>
