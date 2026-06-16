@@ -9,6 +9,7 @@
     "cuid",
     "datasource",
     "firstname",
+    "Isbns",
     "Jahrgangsdaten",
     "Jahrgangshistorie",
     "Kodierungsfehler",
@@ -21,7 +22,8 @@
     "Rückgabehistorie",
     "samesite",
     "Verfügbarkeitsinformationen",
-    "Verlaufsdaten"
+    "Verlaufsdaten",
+    "Zeichenkodierungsfehler"
   ],
   "cSpell.ignorePaths": [
     "**/*config.{js,cjs,mjs,ts,json,yml,yaml}",

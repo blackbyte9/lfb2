@@ -23,9 +23,9 @@ export function LegacySqlImportPanel() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // --- ISBN fix state ---
-  // Map from originalIsbn → user's corrected value (empty string = no fix, will be skipped)
+  // Map from original ISBN → user's corrected value (empty string = no fix, will be skipped)
   const [isbnDrafts, setIsbnDrafts] = useState<Record<string, string>>({});
-  // Set of originalIsbns explicitly excluded
+  // Set of original ISBNs explicitly excluded
   const [isbnExcluded, setIsbnExcluded] = useState<Set<string>>(new Set());
 
   // --- Name fix state ---
@@ -59,7 +59,7 @@ export function LegacySqlImportPanel() {
       const data = (await res.json()) as { error?: string } & LegacySqlPreview;
       if (!res.ok) throw new Error(data.error ?? "Vorschau fehlgeschlagen");
 
-      // Initialise ISBN drafts (normalize-minus-dashes pre-fill)
+      // Initialize ISBN drafts (normalize-minus-dashes pre-fill)
       const drafts: Record<string, string> = {};
       for (const b of data.books) {
         if (b.normalizedIsbn === null) {
@@ -69,7 +69,7 @@ export function LegacySqlImportPanel() {
       setIsbnDrafts(drafts);
       setIsbnExcluded(new Set());
 
-      // Initialise name fixes (all auto-fixable selected by default)
+      // Initialize name fixes (all auto-fixable selected by default)
       const toApply = new Set<number>();
       const overrides = new Map<number, NameDraft>();
       for (const s of data.students) {
@@ -260,7 +260,7 @@ export function LegacySqlImportPanel() {
                 ["Schüler", result.students],
                 ["Ausleihen", result.leases],
                 ["Kommentare", result.comments],
-                ["Überspr. Kommentare", result.skippedComments],
+                ["Übersprungene Kommentare", result.skippedComments],
               ] as [string, number][]
             ).map(([label, value]) => (
               <div key={label} className="rounded-lg border border-black/10 p-3 text-center">
@@ -298,7 +298,7 @@ export function LegacySqlImportPanel() {
                 ["Items", preview.totalItemCount.toLocaleString("de")],
                 ["Schüler", preview.students.length.toLocaleString("de")],
                 ["Ausleihen", preview.leaseCount.toLocaleString("de")],
-                ["Kommentare", `${preview.keepCommentCount.toLocaleString("de")} (${preview.skipCommentCount.toLocaleString("de")} überspr.)`],
+                ["Kommentare", `${preview.keepCommentCount.toLocaleString("de")} (${preview.skipCommentCount.toLocaleString("de")} übersprungene)`],
               ] as [string, string][]
             ).map(([label, value]) => (
               <div key={label} className="rounded-lg border border-black/10 bg-[#f2f4f8] p-3 text-center">
@@ -314,7 +314,7 @@ export function LegacySqlImportPanel() {
               <p className="text-sm font-semibold text-amber-900">⚠ Fehlerhafte ISBNs ({brokenBooks.length})</p>
               <p className="mt-1 text-xs text-amber-800">
                 Trage eine gültige ISBN ein oder lasse das Feld leer, um das Buch (und seine Items) zu überspringen.
-                Mit „Ausschließen" kannst du es explizit aus dem Import entfernen.
+                Mit &quot;Ausschließen&quot; kannst du es explizit aus dem Import entfernen.
               </p>
               <div className="mt-3 overflow-x-auto">
                 <table className="w-full text-xs">
