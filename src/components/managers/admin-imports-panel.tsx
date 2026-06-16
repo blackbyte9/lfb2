@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { deleteAllAppDataAction } from "@/app/admin/actions";
@@ -149,8 +150,46 @@ export function AdminImportsPanel() {
     },
   });
 
-  const statusMessage = booksStatus ?? itemsStatus ?? studentsStatus ?? studentsWibStatus ?? leasesStatus ?? null;
-  const errorMessage = booksError ?? itemsError ?? studentsError ?? studentsWibError ?? leasesError ?? null;
+  const {
+    fileInputRef: appDataInputRef,
+    handleFileChange: handleAppDataFile,
+    triggerFileInput: triggerAppDataFile,
+    status: appDataStatus,
+    error: appDataError,
+    clearStatus: clearAppDataStatus,
+    acceptedTypes: appDataAcceptedTypes,
+  } = useFileUpload({
+    endpoint: "/api/import/app-data",
+    acceptedTypes: ".json",
+    onSuccess: () => {},
+    onError: () => {},
+  });
+
+  const [exportLoading, setExportLoading] = useState(false);
+
+  async function handleExport() {
+    setExportLoading(true);
+    try {
+      const res = await fetch("/api/export/app-data");
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        throw new Error(data.error ?? "Export fehlgeschlagen");
+      }
+      const blob = await res.blob();
+      const date = new Date().toISOString().slice(0, 10);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `lfb-export-${date}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportLoading(false);
+    }
+  }
+
+  const statusMessage = booksStatus ?? itemsStatus ?? studentsStatus ?? studentsWibStatus ?? leasesStatus ?? appDataStatus ?? null;
+  const errorMessage = booksError ?? itemsError ?? studentsError ?? studentsWibError ?? leasesError ?? appDataError ?? null;
 
   async function handlePreviewNameFixes() {
     setNameFixLoading(true);
@@ -428,6 +467,16 @@ export function AdminImportsPanel() {
             Datei wählen
           </Button>
         </div>
+
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <p className="text-sm font-semibold text-[#131820]">Legacy SQL-Vollimport</p>
+          <p className="mt-1 text-xs text-[#92400e]">
+            Importiert aus einem PostgreSQL-Dump (sbm2-Format) mit Vorschau, Problemübersicht und manuellen Korrekturen.
+          </p>
+          <Link href="/admin/import-legacy" className="mt-3 inline-block rounded border border-[#92400e]/40 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-[#92400e] hover:bg-amber-100">
+            Zur Import-Seite →
+          </Link>
+        </div>
       </div>
 
       {statusMessage ? <p className="text-sm text-green-700">{statusMessage}</p> : null}
@@ -527,6 +576,44 @@ export function AdminImportsPanel() {
             </ul>
           </div>
         ) : null}
+      </div>
+
+      <div className="rounded-lg border border-black/10 bg-[#f2f4f8] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold text-[#131820]">Export / Backup</p>
+            <p className="mt-1 text-xs text-[#4b5563]">Exportiert alle App-Daten als JSON-Datei für Backup und Wiederherstellung.</p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => void handleExport()} disabled={exportLoading}>
+            {exportLoading ? "Wird exportiert…" : "Daten exportieren"}
+          </Button>
+        </div>
+
+        <div className="mt-3 border-t border-black/10 pt-3">
+          <p className="text-xs font-medium text-[#364152]">Daten importieren (aus Export-Datei)</p>
+          <p className="mt-1 text-xs text-[#4b5563]">
+            Überschreibt alle App-Daten mit dem Inhalt einer zuvor exportierten JSON-Datei.
+          </p>
+          <input
+            ref={appDataInputRef}
+            type="file"
+            accept={appDataAcceptedTypes}
+            className="hidden"
+            onChange={handleAppDataFile}
+            title="Export-Datei auswählen"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2"
+            onClick={() => {
+              clearAppDataStatus();
+              triggerAppDataFile();
+            }}
+          >
+            Datei wählen
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-red-200 bg-red-50 p-4">

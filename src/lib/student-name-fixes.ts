@@ -188,6 +188,8 @@ function guessFixedText(value: string) {
   return bestScore < originalScore ? best : value;
 }
 
+export { guessFixedText };
+
 export function buildStudentNameFixProposals(students: StudentNameCandidate[]): StudentNameFixProposal[] {
   const fixes: StudentNameFixProposal[] = [];
 
