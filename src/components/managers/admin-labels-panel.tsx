@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+import type { toCanvas as BwipToCanvas } from "bwip-js";
 import { Button } from "@/components/ui/button";
+
+type BwipJs = { toCanvas: typeof BwipToCanvas };
 
 const LABELS_PER_PAGE = 51; // 3 columns × 17 rows — must match API constant
 const MAX_PAGES = 50;
@@ -243,7 +246,7 @@ const BAR_H = tw(590);              // 10.41 mm
 async function generatePdf(labelIds: string[], onProgress: (msg: string) => void) {
   const [{ default: jsPDF }, bwipjs] = await Promise.all([
     import("jspdf"),
-    import("bwip-js"),
+    import("bwip-js") as Promise<typeof import("bwip-js")>,
   ]);
 
   const COLS = 3;
@@ -259,7 +262,7 @@ async function generatePdf(labelIds: string[], onProgress: (msg: string) => void
   // Generate all Code-39-Extended barcodes
   onProgress(`${labelIds.length} Barcodes werden generiert…`);
   const barcodeDataUrls = await Promise.all(
-    labelIds.map((id) => generateCode39DataUrl(bwipjs as BwipJs, id)),
+    labelIds.map((id) => generateCode39DataUrl(bwipjs, id)),
   );
 
   onProgress("PDF wird zusammengestellt…");
@@ -312,10 +315,6 @@ function loadImageAsDataUrl(url: string): Promise<string> {
     img.src = url;
   });
 }
-
-type BwipJs = {
-  toCanvas: (canvas: HTMLCanvasElement, opts: Record<string, unknown>) => void;
-};
 
 function generateCode39DataUrl(bwipjs: BwipJs, text: string): Promise<string> {
   return new Promise((resolve, reject) => {
