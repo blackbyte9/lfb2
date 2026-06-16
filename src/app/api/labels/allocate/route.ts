@@ -28,13 +28,23 @@ export async function POST(request: NextRequest) {
 
   try {
     const run = await prisma.$transaction(async (tx) => {
-      // Find the highest printed label to determine next ID — lock with serializable-ish reads
-      const highest = await tx.printedLabel.findFirst({
-        orderBy: { labelId: "desc" },
-        select: { labelId: true },
-      });
+      // Find the highest existing RSV number from BOTH PrintedLabel AND Item tables
+      // so we never generate an ID that is already in use by an imported item.
+      const [highestLabel, highestItem] = await Promise.all([
+        tx.printedLabel.findFirst({
+          orderBy: { labelId: "desc" },
+          select: { labelId: true },
+        }),
+        tx.item.findFirst({
+          where: { id: { startsWith: "RSV" } },
+          orderBy: { id: "desc" },
+          select: { id: true },
+        }),
+      ]);
 
-      const highestNum = highest ? parseInt(highest.labelId.slice(3), 10) : 0;
+      const numFromLabel = highestLabel ? parseInt(highestLabel.labelId.slice(3), 10) : 0;
+      const numFromItem  = highestItem  ? parseInt(highestItem.id.slice(3), 10)       : 0;
+      const highestNum   = Math.max(numFromLabel, numFromItem);
 
       const labelIds = Array.from({ length: count }, (_, i) => {
         const num = highestNum + i + 1;

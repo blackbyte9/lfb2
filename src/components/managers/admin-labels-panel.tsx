@@ -34,6 +34,8 @@ export function AdminLabelsPanel() {
   const [history, setHistory] = useState<HistoryResponse | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,6 +48,26 @@ export function AdminLabelsPanel() {
   }, [historyRefreshKey]);
 
   const totalLabels = pages * LABELS_PER_PAGE;
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const res = await fetch("/api/labels/sync", { method: "POST" });
+      const data = (await res.json()) as { error?: string; synced?: number };
+      if (!res.ok) throw new Error(data.error ?? "Sync fehlgeschlagen");
+      setSyncMsg(
+        data.synced === 0
+          ? "Alle vorhandenen Item-IDs sind bereits erfasst."
+          : `${data.synced!.toLocaleString("de")} Item-ID${data.synced !== 1 ? "s" : ""} wurden in die Historie übernommen.`,
+      );
+      setHistoryRefreshKey((k) => k + 1);
+    } catch (err) {
+      setSyncMsg(err instanceof Error ? err.message : "Fehler beim Synchronisieren");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   async function handleGenerate() {
     setStage("allocating");
@@ -153,12 +175,26 @@ export function AdminLabelsPanel() {
 
       {/* ── History ─────────────────────────────────────────────────────────── */}
       <div className="rounded-lg border border-black/10 bg-white p-5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold text-[#131820]">Druckhistorie</h2>
-          <Button size="xs" variant="outline" onClick={() => setHistoryRefreshKey((k) => k + 1)} disabled={historyLoading}>
-            Aktualisieren
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => void handleSync()}
+              disabled={syncing || historyLoading}
+              title="Importierte Item-IDs in die Druckhistorie übernehmen, damit keine doppelten IDs vergeben werden"
+            >
+              {syncing ? "Sync…" : "Mit Items abgleichen"}
+            </Button>
+            <Button size="xs" variant="outline" onClick={() => setHistoryRefreshKey((k) => k + 1)} disabled={historyLoading}>
+              Aktualisieren
+            </Button>
+          </div>
         </div>
+        {syncMsg && (
+          <p className="mt-2 text-xs text-[#4b5563]">{syncMsg}</p>
+        )}
 
         {historyLoading ? (
           <p className="mt-3 text-sm text-[#6b7280]">Lade…</p>
@@ -193,7 +229,7 @@ export function AdminLabelsPanel() {
                             minute: "2-digit",
                           })}
                         </td>
-                        <td className="px-3 py-2 text-xs">{run.pages}</td>
+                        <td className="px-3 py-2 text-xs">{run.pages === 0 ? <span className="italic text-[#6b7280]">Importiert</span> : run.pages}</td>
                         <td className="px-3 py-2 text-xs">{run.count}</td>
                         <td className="px-3 py-2 font-mono text-xs">
                           {run.firstId} – {run.lastId}
